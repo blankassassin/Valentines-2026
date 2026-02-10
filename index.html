@@ -41,7 +41,7 @@ canvas {
   color: #4a0015;
   border-radius: 4px;
 }
-#startScreen {
+#startScreen, #endScreen {
   position: absolute;
   top:0; left:0;
   width: 100%; height: 100%;
@@ -54,7 +54,7 @@ canvas {
   font-family: monospace;
   z-index: 10;
 }
-#startScreen button {
+#startScreen button, #endScreen button {
   font-size: 20px;
   padding: 10px 20px;
   margin-top: 20px;
@@ -79,6 +79,8 @@ canvas {
     Hit START to play</div>
     <button onclick="startGame()">START</button>
   </div>
+
+  <div id="endScreen" style="display:none;"></div>
 </div>
 
 <div class="controls">
@@ -96,6 +98,7 @@ const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
+const endScreen = document.getElementById("endScreen");
 const grid = 16;
 
 let score, lives, player, beatFrame, mouthOpen, gameInterval;
@@ -244,24 +247,21 @@ function checkCollisions(){
   if(hearts.length===0) win();
 }
 
+// Show refresh button after game over
+function showEndScreen(msg){
+  clearInterval(gameInterval);
+  endScreen.innerHTML = `<div style="text-align:center;">${msg}</div>
+    <button onclick="location.reload()">Play Again</button>`;
+  endScreen.style.display="flex";
+}
+
 // Game over split into 3 lines
 function gameOver(){
-  clearInterval(gameInterval);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle="#4a0015";
-  ctx.font="18px monospace";
-  ctx.textAlign="center";
-  ctx.fillText("I believe in your skills so I doubt you'll see this", canvas.width/2, canvas.height/2 - 20);
-  ctx.fillText("Anyway.", canvas.width/2, canvas.height/2 + 10);
-  ctx.fillText("Try Again!", canvas.width/2, canvas.height/2 + 40);
+  showEndScreen("I believe in your skills so I doubt you'll see this<br>anyway<br>try again");
 }
 
 // Win animation with swirling floating hearts and split Valentine message
 function win(){
-  clearInterval(gameInterval);
-  chompSound();
-  chompSound();
-
   const floatingHearts = [];
   for(let i=0;i<50;i++){
     floatingHearts.push({
@@ -291,12 +291,15 @@ function win(){
     ctx.font="28px monospace";
     ctx.fillText("YOU WIN!", canvas.width/2, 100 + frame);
     ctx.font="32px monospace";
-    ctx.fillText("Miriam,", canvas.width/2, 180 + frame);
+    ctx.fillText("Jose,", canvas.width/2, 180 + frame);
     ctx.fillText("will you be", canvas.width/2, 220 + frame);
     ctx.fillText("my valentine? ♥", canvas.width/2, 260 + frame);
 
     frame += 1;
-    if(frame>60) clearInterval(anim);
+    if(frame>60){
+      clearInterval(anim);
+      showEndScreen("Congratulations!<br>Play again?");
+    }
   },60);
 }
 
@@ -323,6 +326,7 @@ function startGame(){
     {x:0, y:0, px:0, py:0, color:"#FF007F"}               // Pink
   ];
   if(gameInterval) clearInterval(gameInterval);
+  endScreen.style.display="none";
   gameInterval = setInterval(update,50);
   draw();
 }
