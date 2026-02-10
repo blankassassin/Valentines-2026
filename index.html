@@ -43,6 +43,7 @@ canvas {
   align-items: center;
   color:#4a0015;
   font-family: monospace;
+  z-index: 10;
 }
 #startScreen button {
   font-size: 20px;
@@ -87,22 +88,8 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 const grid = 16;
 
-// Game variables
-let score = 0;
-let lives = 3;
-let player = {x:10, y:10, dx:0, dy:0, px:10*grid, py:10*grid};
-let beatFrame = 0;
-let mouthOpen = true;
-let gameInterval;
-
-// Hearts
-let hearts = [];
-
-// Ghost enemies with smooth positions
-let ghosts = [];
-
-// Sparkles
-let sparkles = [];
+let score, lives, player, beatFrame, mouthOpen, gameInterval;
+let hearts, ghosts, sparkles;
 
 // Audio context
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -159,4 +146,158 @@ function draw(){
   // Ghosts
   ghosts.forEach(g=>{
     ctx.fillStyle=g.color;
-    ctx.fillRec
+    ctx.fillRect(g.px,g.py,14,14);
+  });
+
+  // Sparkles
+  sparkles.forEach(s=>{
+    ctx.fillStyle="white";
+    ctx.fillRect(s.x,s.y,s.size,s.size);
+    s.y -= 1;
+    s.size *= 0.95;
+  });
+  sparkles = sparkles.filter(s=>s.size>0);
+
+  beatFrame++;
+}
+
+// Move player
+function setDirection(dx,dy){
+  if(player) {
+    player.dx = dx;
+    player.dy = dy;
+  }
+}
+
+// Update game
+function update(){
+  if(!player) return;
+
+  // Move player smoothly
+  player.px += player.dx * 4;
+  player.py += player.dy * 4;
+
+  // Keep player inside bounds
+  player.px = Math.max(0, Math.min(320-16, player.px));
+  player.py = Math.max(0, Math.min(640-16, player.py));
+  player.x = Math.floor(player.px/grid);
+  player.y = Math.floor(player.py/grid);
+
+  // Move ghosts smoothly
+  ghosts.forEach(g=>{
+    if(!g.targetX || Math.random()<0.02){
+      g.targetX = Math.floor(Math.random()*20)*grid;
+      g.targetY = Math.floor(Math.random()*40)*grid;
+    }
+    const dx = g.targetX - g.px;
+    const dy = g.targetY - g.py;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const speed = 2;
+    if(dist>1){
+      g.px += dx/dist*speed;
+      g.py += dy/dist*speed;
+    }
+  });
+
+  checkCollisions();
+  draw();
+}
+
+// Collision checks
+function checkCollisions(){
+  // Collect hearts
+  hearts = hearts.filter(h=>{
+    if(h.x===player.x && h.y===player.y){
+      score++;
+      scoreEl.textContent=score;
+      beep(500,0.1);
+      for(let i=0;i<5;i++) sparkles.push({x:player.px+7, y:player.py+7, size:2+Math.random()*2});
+      return false;
+    }
+    return true;
+  });
+
+  // Ghost collision
+  ghosts.forEach(g=>{
+    if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
+      lives--;
+      livesEl.textContent=lives;
+      beep(150,0.3);
+      player.px=10*grid;
+      player.py=10*grid;
+      player.dx=0;
+      player.dy=0;
+      if(lives<=0) gameOver();
+    }
+  });
+
+  // Win
+  if(hearts.length===0) win();
+}
+
+// Game over
+function gameOver(){
+  clearInterval(gameInterval);
+  beep(100,0.5);
+  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p>Try again!</p>";
+}
+
+// Win animation
+function win(){
+  clearInterval(gameInterval);
+  beep(800,0.2);
+  setTimeout(()=>beep(1000,0.2),150);
+  let frame=0;
+  const anim=setInterval(()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#4a0015";
+    ctx.font="16px monospace";
+    const msg=["YOU WIN!","","Jose will you be my","Valentine? ♥"];
+    msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
+    frame+=2;
+    if(frame>60) clearInterval(anim);
+  },60);
+}
+
+// Start game
+function startGame(){
+  startScreen.style.display="none";
+  // Initialize variables
+  score = 0;
+  lives = 3;
+  scoreEl.textContent = score;
+  livesEl.textContent = lives;
+  beatFrame = 0;
+  mouthOpen = true;
+  player = {x:10, y:10, dx:0, dy:0, px:10*grid, py:10*grid};
+  sparkles = [];
+  hearts = [];
+  for(let i=0;i<40;i++){
+    hearts.push({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*40)});
+  }
+  ghosts = [
+    {x:5, y:5, px:5*grid, py:5*grid, color:"red"},
+    {x:15, y:20, px:15*grid, py:20*grid, color:"blue"},
+    {x:10, y:35, px:10*grid, py:35*grid, color:"green"},
+    {x:0, y:0, px:0, py:0, color:"#FF007F"} // new 4th ghost
+  ];
+
+  // Start update loop
+  if(gameInterval) clearInterval(gameInterval);
+  gameInterval = setInterval(update,50);
+  draw();
+}
+
+// Keyboard controls
+document.addEventListener('keydown', e=>{
+  switch(e.key){
+    case "ArrowUp": setDirection(0,-1); break;
+    case "ArrowDown": setDirection(0,1); break;
+    case "ArrowLeft": setDirection(-1,0); break;
+    case "ArrowRight": setDirection(1,0); break;
+  }
+});
+</script>
+
+</body>
+</html>
