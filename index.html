@@ -60,7 +60,8 @@ canvas {
 </head>
 <body>
 
-<h2>Valentine Chase Game</h2>
+<h2 style="font-size:16px; color:black;">Valentine Chase Game</h2>
+
 <div id="screen">
   <div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
   <canvas id="game" width="320" height="450"></canvas>
@@ -92,24 +93,56 @@ const grid = 16;
 
 let score, lives, player, beatFrame, mouthOpen, gameInterval;
 let hearts, ghosts, sparkles;
+let musicInterval;
 
 // Audio context
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// Chomp / collect sounds
-function beep(freq=300,dur=0.1){
-  const o=audioCtx.createOscillator();
-  o.frequency.value=freq;
-  o.connect(audioCtx.destination);
-  o.start();
-  o.stop(audioCtx.currentTime+dur);
+// Chomp / crunch sound
+function chompSound() {
+  const times = [0, 0.1];
+  times.forEach(offset => {
+    const osc = audioCtx.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(400 + Math.random()*200, audioCtx.currentTime + offset);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + offset);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + offset);
+    osc.stop(audioCtx.currentTime + offset + 0.1);
+  });
 }
 
-// Draw red pixel heart pellet
+// Background looping Pac-Man–style music
+function startMusic() {
+  if(musicInterval) clearInterval(musicInterval);
+  let t = audioCtx.currentTime;
+  musicInterval = setInterval(()=>{
+    const notes = [440, 440, 523, 440, 659, 440, 523, 440];
+    const dur = 0.15;
+    for(let n of notes){
+      const osc = audioCtx.createOscillator();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(n, audioCtx.currentTime);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + dur);
+      t += dur;
+    }
+  }, 1200);
+}
+
+function stopMusic() {
+  if(musicInterval) clearInterval(musicInterval);
+}
+
+// Draw red pixel heart pellet with pulse adjustment
 function drawHeart(x,y){
   const px = x*grid;
   const py = y*grid;
-  const size = 2 + Math.sin(beatFrame/5)*1;
+  const size = 2.5 + Math.sin(beatFrame/5)*1;
   const sprite=[
     [0,1,1,0,1,1,0],
     [1,1,1,1,1,1,1],
@@ -118,7 +151,7 @@ function drawHeart(x,y){
     [0,0,1,1,1,0,0],
     [0,0,0,1,0,0,0]
   ];
-  ctx.fillStyle="red";
+  ctx.fillStyle="#FF3333"; // Updated heart color
   for(let r=0;r<sprite.length;r++){
     for(let c=0;c<sprite[r].length;c++){
       if(sprite[r][c]) ctx.fillRect(px+c*size, py+r*size, size, size);
@@ -130,17 +163,15 @@ function drawHeart(x,y){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // Hearts
   hearts.forEach(h => drawHeart(h.x,h.y));
 
-  // Player Pac-Man circle with mouth facing movement
   const px = player.px + grid/2;
   const py = player.py + grid/2;
   let angle = 0;
-  if(player.dx===1) angle = 0;       // Right
-  else if(player.dx===-1) angle = Math.PI; // Left
-  else if(player.dy===-1) angle = -Math.PI/2; // Up
-  else if(player.dy===1) angle = Math.PI/2;   // Down
+  if(player.dx===1) angle = 0;
+  else if(player.dx===-1) angle = Math.PI;
+  else if(player.dy===-1) angle = -Math.PI/2;
+  else if(player.dy===1) angle = Math.PI/2;
 
   const mouthAngle = mouthOpen ? 0.25*Math.PI : 0;
   ctx.fillStyle="yellow";
@@ -151,13 +182,11 @@ function draw(){
   ctx.fill();
   mouthOpen = !mouthOpen;
 
-  // Ghosts
   ghosts.forEach(g=>{
     ctx.fillStyle=g.color;
     ctx.fillRect(g.px,g.py,14,14);
   });
 
-  // Sparkles
   sparkles.forEach(s=>{
     ctx.fillStyle="white";
     ctx.fillRect(s.x,s.y,s.size,s.size);
@@ -171,10 +200,7 @@ function draw(){
 
 // Move player
 function setDirection(dx,dy){
-  if(player) {
-    player.dx = dx;
-    player.dy = dy;
-  }
+  if(player) player.dx = dx, player.dy = dy;
 }
 
 // Update game
@@ -183,7 +209,6 @@ function update(){
 
   player.px += player.dx * 4;
   player.py += player.dy * 4;
-
   player.px = Math.max(0, Math.min(320-16, player.px));
   player.py = Math.max(0, Math.min(450-16, player.py));
   player.x = Math.floor(player.px/grid);
@@ -193,13 +218,14 @@ function update(){
     if(!g.targetX || Math.random()<0.02){
       g.targetX = Math.floor(Math.random()*20)*grid;
       g.targetY = Math.floor(Math.random()*28)*grid;
+      g.offset = Math.random()*Math.PI*2;
     }
     const dx = g.targetX - g.px;
     const dy = g.targetY - g.py;
     const dist = Math.sqrt(dx*dx + dy*dy);
     const speed = 2;
     if(dist>1){
-      g.px += dx/dist*speed;
+      g.px += dx/dist*speed + Math.sin(Date.now()/200 + g.offset);
       g.py += dy/dist*speed;
     }
   });
@@ -214,7 +240,7 @@ function checkCollisions(){
     if(h.x===player.x && h.y===player.y){
       score++;
       scoreEl.textContent=score;
-      beep(500,0.1);
+      chompSound();
       for(let i=0;i<5;i++) sparkles.push({x:player.px+7, y:player.py+7, size:2+Math.random()*2});
       return false;
     }
@@ -225,7 +251,7 @@ function checkCollisions(){
     if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
       lives--;
       livesEl.textContent=lives;
-      beep(150,0.3);
+      chompSound();
       player.px=10*grid;
       player.py=10*grid;
       player.dx=0;
@@ -237,18 +263,25 @@ function checkCollisions(){
   if(hearts.length===0) win();
 }
 
-// Game over
+// Game over split into 3 lines
 function gameOver(){
   clearInterval(gameInterval);
-  beep(100,0.5);
-  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p> I believe in your skills so I doubt you'll see this. Anyway. Try again!</p>";
+  stopMusic();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#4a0015";
+  ctx.font="18px monospace";
+  ctx.textAlign="center";
+  ctx.fillText("I believe in your skills so I doubt you'll see this", canvas.width/2, canvas.height/2 - 20);
+  ctx.fillText("anyway", canvas.width/2, canvas.height/2 + 10);
+  ctx.fillText("try again", canvas.width/2, canvas.height/2 + 40);
 }
 
-// Win animation with floating hearts and centered text
+// Win animation with swirling floating hearts and split Valentine message
 function win(){
   clearInterval(gameInterval);
-  beep(800,0.2);
-  setTimeout(()=>beep(1000,0.2),150);
+  stopMusic();
+  chompSound();
+  chompSound();
 
   const floatingHearts = [];
   for(let i=0;i<50;i++){
@@ -257,7 +290,8 @@ function win(){
       y: 450 + Math.random()*100,
       size: 4 + Math.random()*4,
       speed: 1 + Math.random()*2,
-      color: Math.random()>0.5 ? "red" : "#FF007F"
+      color: Math.random()>0.5 ? "#FF3333" : "#FF007F",
+      offset: Math.random()*Math.PI*2
     });
   }
 
@@ -265,23 +299,22 @@ function win(){
   const anim=setInterval(()=>{
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Floating hearts
     floatingHearts.forEach(h=>{
       ctx.fillStyle=h.color;
       ctx.beginPath();
-      ctx.arc(h.x,h.y,h.size,0,Math.PI*2);
+      ctx.arc(h.x + Math.sin(Date.now()/200 + h.offset)*10, h.y, h.size,0,Math.PI*2);
       ctx.fill();
       h.y -= h.speed;
     });
 
-    // Centered win text
     ctx.fillStyle="#4a0015";
-    ctx.font="22px monospace";
     ctx.textAlign="center";
+    ctx.font="28px monospace";
     ctx.fillText("YOU WIN!", canvas.width/2, 100 + frame);
-
-    ctx.font="26px monospace";
-    ctx.fillText("Miriam will you be my Valentine? ♥", canvas.width/2, 180 + frame);
+    ctx.font="32px monospace";
+    ctx.fillText("Jose,", canvas.width/2, 180 + frame);
+    ctx.fillText("will you be", canvas.width/2, 220 + frame);
+    ctx.fillText("my valentine? ♥", canvas.width/2, 260 + frame);
 
     frame += 1;
     if(frame>60) clearInterval(anim);
@@ -291,6 +324,8 @@ function win(){
 // Start game
 function startGame(){
   startScreen.style.display="none";
+  startMusic();
+
   score = 0;
   lives = 3;
   scoreEl.textContent = score;
@@ -304,9 +339,9 @@ function startGame(){
     hearts.push({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*28)});
   }
   ghosts = [
-    {x:5, y:5, px:5*grid, py:5*grid, color:"red"},
-    {x:15, y:10, px:15*grid, py:10*grid, color:"blue"},
-    {x:10, y:20, px:10*grid, py:20*grid, color:"green"},
+    {x:5, y:5, px:5*grid, py:5*grid, color:"#CC0000"},
+    {x:15, y:10, px:15*grid, py:10*grid, color:"#00FFFF"},
+    {x:10, y:20, px:10*grid, py:20*grid, color:"#FF8000"},
     {x:0, y:0, px:0, py:0, color:"#FF007F"}
   ];
   if(gameInterval) clearInterval(gameInterval);
