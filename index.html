@@ -72,3 +72,213 @@ const maze = [
   [1,0,1,0,1,0,1,1,0,1,0,1,1,0,1,0,1,0,0,1],
   [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,1],
   [1,0,1,1,1,0,0,1,1,1,0,1,0,1,1,1,1,0,0,1],
+  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,0,0,1],
+  [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+// Hearts / pellets
+let hearts = [];
+for(let y=0;y<maze.length;y++){
+  for(let x=0;x<maze[y].length;x++){
+    if(maze[y][x]===0) hearts.push({x,y});
+  }
+}
+
+// Ghost enemies
+let ghosts = [
+  {x:18,y:1,color:"red"},
+  {x:1,y:9,color:"blue"},
+  {x:18,y:9,color:"green"}
+];
+
+// Sparkles
+let sparkles = [];
+
+// Audio context
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Pac-Man sounds
+function beep(freq=300,dur=0.1){
+  const o=audioCtx.createOscillator();
+  o.frequency.value=freq;
+  o.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime+dur);
+}
+
+// Pac-Man background music
+let musicOsc;
+function startMusic(){
+  musicOsc = audioCtx.createOscillator();
+  musicOsc.type="square";
+  musicOsc.frequency.value=220;
+  musicOsc.connect(audioCtx.destination);
+  musicOsc.start();
+}
+startMusic();
+
+// Draw maze
+function drawMaze(){
+  for(let y=0;y<maze.length;y++){
+    for(let x=0;x<maze[y].length;x++){
+      if(maze[y][x]===1){
+        ctx.fillStyle="#4a0015";
+        ctx.fillRect(x*grid,y*grid,grid,grid);
+      }
+    }
+  }
+}
+
+// Draw red pixel heart pellet
+function drawHeart(x,y){
+  const px = x*grid;
+  const py = y*grid;
+  const size = 2 + Math.sin(beatFrame/5)*1;
+  const sprite=[
+    [0,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0]
+  ];
+  ctx.fillStyle="red";
+  for(let r=0;r<sprite.length;r++){
+    for(let c=0;c<sprite[r].length;c++){
+      if(sprite[r][c]) ctx.fillRect(px+c*size, py+r*size, size, size);
+    }
+  }
+}
+
+// Draw everything
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawMaze();
+
+  // Hearts
+  hearts.forEach(h => drawHeart(h.x,h.y));
+
+  // Player Pac-Man circle with mouth animation
+  const px = player.x*grid+grid/2;
+  const py = player.y*grid+grid/2;
+  const mouthAngle = mouthOpen ? 0.25*Math.PI : 0;
+  ctx.fillStyle="yellow";
+  ctx.beginPath();
+  ctx.moveTo(px,py);
+  ctx.arc(px,py,7, mouthAngle, Math.PI*2-mouthAngle);
+  ctx.closePath();
+  ctx.fill();
+  mouthOpen = !mouthOpen;
+
+  // Ghosts
+  ghosts.forEach(g=>{
+    ctx.fillStyle=g.color;
+    ctx.fillRect(g.x*grid,g.y*grid,14,14);
+  });
+
+  // Sparkles
+  sparkles.forEach(s=>{
+    ctx.fillStyle="white";
+    ctx.fillRect(s.x,s.y,s.size,s.size);
+    s.y -= 1;
+    s.size *= 0.95;
+  });
+  sparkles = sparkles.filter(s=>s.size>0);
+  beatFrame++;
+}
+
+// Player movement
+function setDirection(dx,dy){
+  player.dx = dx;
+  player.dy = dy;
+}
+
+// Update game
+function update(){
+  // Move player if no wall
+  const newX = player.x+player.dx;
+  const newY = player.y+player.dy;
+  if(maze[newY] && maze[newY][newX]===0){
+    player.x=newX;
+    player.y=newY;
+  }
+
+  checkCollisions();
+  moveGhosts();
+  draw();
+}
+setInterval(update,200);
+
+// Collision checks
+function checkCollisions(){
+  // Collect hearts
+  hearts = hearts.filter(h=>{
+    if(h.x===player.x && h.y===player.y){
+      score++;
+      scoreEl.textContent=score;
+      beep(500,0.1);
+      for(let i=0;i<5;i++) sparkles.push({x:player.x*grid+7, y:player.y*grid+7, size:2+Math.random()*2});
+      return false;
+    }
+    return true;
+  });
+
+  // Ghost collision
+  ghosts.forEach(g=>{
+    if(g.x===player.x && g.y===player.y){
+      lives--;
+      livesEl.textContent=lives;
+      beep(150,0.3);
+      player={x:1,y:1,dx:0,dy:0};
+      if(lives<=0) gameOver();
+    }
+  });
+
+  if(hearts.length===0) win();
+}
+
+// Ghost AI: chase player
+function moveGhosts(){
+  ghosts.forEach(g=>{
+    const dx = player.x - g.x;
+    const dy = player.y - g.y;
+    let moveX=0, moveY=0;
+    if(Math.abs(dx)>Math.abs(dy)) moveX = dx>0?1:-1;
+    else moveY = dy>0?1:-1;
+    if(maze[g.y] && maze[g.y][g.x+moveX]===0) g.x+=moveX;
+    else if(maze[g.y+moveY] && maze[g.y+moveY][g.x]===0) g.y+=moveY;
+  });
+}
+
+// Game over
+function gameOver(){
+  musicOsc.stop();
+  beep(100,0.5);
+  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p>Try again!</p>";
+}
+
+// Win animation
+function win(){
+  musicOsc.stop();
+  beep(800,0.2);
+  setTimeout(()=>beep(1000,0.2),150);
+  
+  let frame=0;
+  const anim=setInterval(()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#4a0015";
+    ctx.font="16px monospace";
+    const msg=["YOU WIN!","","Jose will you be my","Valentine? ♥"];
+    msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
+    frame+=2;
+    if(frame>60) clearInterval(anim);
+  },60);
+}
+</script>
+
+</body>
+</html>
