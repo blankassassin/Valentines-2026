@@ -272,7 +272,7 @@ function win(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle="#4a0015";
     ctx.font="16px monospace";
-    const msg=["YOU WIN!","","Jose will you be my","Valentine? ♥"];
+    const msg=["YOU WIN!","","Miriam will you be my","Valentine? ♥"];
     msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
     frame+=2;
     if(frame>60) clearInterval(anim);
