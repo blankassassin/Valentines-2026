@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valentine Game</title>
+
+<style>
+body {
+  background: #5c1a2b; /* outer shell */
+  font-family: monospace;
+  text-align: center;
+  color: #4a0015;
+}
+
+#screen {
+  background: #ff9bb3; /* screen tint */
+  border: 12px solid #4a0015;
+  width: 320px;
+  margin: 20px auto;
+  padding: 10px;
+}
+
+canvas {
+  background: #ff9bb3;
+  display: block;
+  margin: auto;
+}
+
+.controls button {
+  font-size: 20px;
+  padding: 12px;
+  margin: 4px;
+  background: #ff6f91;
+  border: 2px solid #4a0015;
+  color: #4a0015;
+  border-radius: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Retro Valentine Quest</h3>
+
+<div id="screen">
+  <div>Score: <span id="score">0</span></div>
+  <canvas id="game" width="320" height="320"></canvas>
+</div>
+
+<div class="controls">
+  <div><button onclick="move(0,-1)">▲</button></div>
+  <div>
+    <button onclick="move(-1,0)">◀</button>
+    <button onclick="move(1,0)">▶</button>
+  </div>
+  <div><button onclick="move(0,1)">▼</button></div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+
+const grid = 16;
+let score = 0;
+let player = {x:1,y:1};
+
+// Hearts
+let hearts = [];
+for(let i=0;i<8;i++){
+  hearts.push({
+    x:Math.floor(Math.random()*20),
+    y:Math.floor(Math.random()*20)
+  });
+}
+
+// Enemies
+let enemies = [
+  {x:18,y:18},
+  {x:10,y:5}
+];
+
+// Retro beep sound
+function beep(freq=300,dur=0.1){
+  const a=new AudioContext();
+  const o=a.createOscillator();
+  o.frequency.value=freq;
+  o.connect(a.destination);
+  o.start();
+  o.stop(a.currentTime+dur);
+}
+
+// Pixel heart sprite
+function drawPixelHeart(x, y) {
+  const px = x * grid;
+  const py = y * grid;
+
+  const sprite = [
+    [0,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0]
+  ];
+
+  ctx.fillStyle = "#4a0015"; // sprite color
+
+  const size = 2; // pixel size
+  for (let row = 0; row < sprite.length; row++) {
+    for (let col = 0; col < sprite[row].length; col++) {
+      if (sprite[row][col]) {
+        ctx.fillRect(
+          px + col * size,
+          py + row * size,
+          size,
+          size
+        );
+      }
+    }
+  }
+}
+
+// Draw player and enemies
+function draw() {
+  ctx.clearRect(0,0,320,320);
+
+  // Player
+  ctx.fillStyle = "#4a0015";
+  ctx.fillRect(player.x*grid, player.y*grid, 14,14);
+
+  // Hearts
+  hearts.forEach(h => drawPixelHeart(h.x,h.y));
+
+  // Enemies
+  enemies.forEach(e => {
+    ctx.fillStyle = "#4a0015";
+    ctx.fillRect(e.x*grid, e.y*grid, 14,14);
+  });
+}
+
+// Move player
+function move(dx, dy){
+  player.x = Math.max(0, Math.min(19, player.x+dx));
+  player.y = Math.max(0, Math.min(19, player.y+dy));
+  check();
+  draw();
+}
+
+// Check collisions
+function check(){
+  // Collect hearts
+  hearts = hearts.filter(h=>{
+    if(h.x===player.x && h.y===player.y){
+      score++;
+      scoreEl.textContent=score;
+      beep(600);
+      return false;
+    }
+    return true;
+  });
+
+  // Enemy collision
+  enemies.forEach(e=>{
+    if(e.x===player.x && e.y===player.y){
+      gameOver();
+    }
+  });
+
+  // Win
+  if(hearts.length===0) win();
+}
+
+// Move enemies randomly
+function moveEnemies(){
+  enemies.forEach(e=>{
+    const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    let d=dirs[Math.floor(Math.random()*4)];
+    e.x=Math.max(0,Math.min(19,e.x+d[0]));
+    e.y=Math.max(0,Math.min(19,e.y+d[1]));
+  });
+  check();
+  draw();
+}
+
+// Game over
+function gameOver(){
+  beep(120,0.4);
+  document.getElementById("screen").innerHTML=
+    "<h2>Game Over</h2><p>Try again!</p>";
+}
+
+// Win animation
+function win(){
+  beep(800,0.2);
+  setTimeout(()=>beep(1000,0.2),150);
+
+  let frame=0;
+  const anim=setInterval(()=>{
+    ctx.clearRect(0,0,320,320);
+    ctx.fillStyle="#4a0015";
+    ctx.font="16px monospace";
+
+    const msg=[
+      "YOU WIN!",
+      "",
+      "Will you be my",
+      "Valentine? ♥"
+    ];
+
+    msg.forEach((t,i)=>{
+      ctx.fillText(t,40,60+i*30+frame);
+    });
+
+    frame+=2;
+    if(frame>40) clearInterval(anim);
+
+  },60);
+}
+
+// Start game
+setInterval(moveEnemies,600);
+draw();
+</script>
+
+</body>
+</html>
