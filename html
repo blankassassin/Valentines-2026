@@ -10,6 +10,7 @@ body {
   font-family: monospace;
   text-align: center;
   color: #4a0015;
+  margin: 0;
 }
 
 #screen {
@@ -18,6 +19,7 @@ body {
   width: 320px;
   margin: 20px auto;
   padding: 10px;
+  position: relative;
 }
 
 canvas {
@@ -43,7 +45,9 @@ canvas {
 <h3>Retro Valentine Quest</h3>
 
 <div id="screen">
-  <div>Score: <span id="score">0</span></div>
+  <div id="info">
+    Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
+  </div>
   <canvas id="game" width="320" height="320"></canvas>
 </div>
 
@@ -60,18 +64,24 @@ canvas {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
+const livesEl = document.getElementById("lives");
 
 const grid = 16;
 let score = 0;
+let lives = 3;
+let heartbeat = 0;
+let beatDirection = 1;
+
 let player = {x:1,y:1};
+let gameState = "start"; // start, playing, win, gameover
 
 // Hearts
 let hearts = [];
-for(let i=0;i<8;i++){
-  hearts.push({
-    x:Math.floor(Math.random()*20),
-    y:Math.floor(Math.random()*20)
-  });
+function spawnHearts() {
+  hearts = [];
+  for(let i=0;i<8;i++){
+    hearts.push({ x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20) });
+  }
 }
 
 // Enemies
@@ -80,7 +90,10 @@ let enemies = [
   {x:10,y:5}
 ];
 
-// Retro beep sound
+// Sparkles
+let sparkles = [];
+
+// Sounds
 function beep(freq=300,dur=0.1){
   const a=new AudioContext();
   const o=a.createOscillator();
@@ -90,11 +103,11 @@ function beep(freq=300,dur=0.1){
   o.stop(a.currentTime+dur);
 }
 
-// Pixel heart sprite
+// Pixel heart sprite with heartbeat animation
 function drawPixelHeart(x, y) {
   const px = x * grid;
   const py = y * grid;
-
+  const size = 2 + heartbeat*0.2; // slight beat
   const sprite = [
     [0,1,1,0,1,1,0],
     [1,1,1,1,1,1,1],
@@ -103,44 +116,61 @@ function drawPixelHeart(x, y) {
     [0,0,1,1,1,0,0],
     [0,0,0,1,0,0,0]
   ];
-
-  ctx.fillStyle = "#4a0015"; // sprite color
-
-  const size = 2; // pixel size
+  ctx.fillStyle = "#4a0015";
   for (let row = 0; row < sprite.length; row++) {
     for (let col = 0; col < sprite[row].length; col++) {
       if (sprite[row][col]) {
-        ctx.fillRect(
-          px + col * size,
-          py + row * size,
-          size,
-          size
-        );
+        ctx.fillRect(px + col*size, py + row*size, size, size);
       }
     }
   }
 }
 
 // Draw player and enemies
-function draw() {
-  ctx.clearRect(0,0,320,320);
-
-  // Player
+function drawPlayer() {
   ctx.fillStyle = "#4a0015";
   ctx.fillRect(player.x*grid, player.y*grid, 14,14);
+}
 
-  // Hearts
-  hearts.forEach(h => drawPixelHeart(h.x,h.y));
+function drawEnemies() {
+  ctx.fillStyle = "#4a0015";
+  enemies.forEach(e => ctx.fillRect(e.x*grid,e.y*grid,14,14));
+}
 
-  // Enemies
-  enemies.forEach(e => {
-    ctx.fillStyle = "#4a0015";
-    ctx.fillRect(e.x*grid, e.y*grid, 14,14);
+function drawSparkles() {
+  sparkles.forEach(s => {
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+    ctx.fillRect(s.x, s.y, 2,2);
+    s.alpha -= 0.05;
   });
+  sparkles = sparkles.filter(s => s.alpha>0);
+}
+
+// Draw everything
+function draw() {
+  ctx.clearRect(0,0,320,320);
+  if(gameState==="start") {
+    ctx.fillStyle="#4a0015";
+    ctx.font="16px monospace";
+    ctx.fillText("RETRO VALENTINE QUEST",30,140);
+    ctx.fillText("Press any arrow to start",50,180);
+    return;
+  }
+  hearts.forEach(h => drawPixelHeart(h.x,h.y));
+  drawPlayer();
+  drawEnemies();
+  drawSparkles();
 }
 
 // Move player
 function move(dx, dy){
+  if(gameState==="start") {
+    gameState="playing";
+    spawnHearts();
+    draw();
+    return;
+  }
+  if(gameState!=="playing") return;
   player.x = Math.max(0, Math.min(19, player.x+dx));
   player.y = Math.max(0, Math.min(19, player.y+dy));
   check();
@@ -149,30 +179,40 @@ function move(dx, dy){
 
 // Check collisions
 function check(){
-  // Collect hearts
+  // Hearts
   hearts = hearts.filter(h=>{
     if(h.x===player.x && h.y===player.y){
       score++;
       scoreEl.textContent=score;
       beep(600);
+
+      // Sparkles
+      for(let i=0;i<10;i++){
+        sparkles.push({x:player.x*grid + Math.random()*16, y:player.y*grid + Math.random()*16, alpha:1});
+      }
+
       return false;
     }
     return true;
   });
 
-  // Enemy collision
+  // Enemies
   enemies.forEach(e=>{
     if(e.x===player.x && e.y===player.y){
-      gameOver();
+      lives--;
+      livesEl.textContent=lives;
+      beep(120,0.3);
+      player={x:1,y:1};
+      if(lives<=0) gameOver();
     }
   });
 
-  // Win
   if(hearts.length===0) win();
 }
 
-// Move enemies randomly
+// Enemy movement
 function moveEnemies(){
+  if(gameState!=="playing") return;
   enemies.forEach(e=>{
     const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
     let d=dirs[Math.floor(Math.random()*4)];
@@ -185,41 +225,52 @@ function moveEnemies(){
 
 // Game over
 function gameOver(){
-  beep(120,0.4);
-  document.getElementById("screen").innerHTML=
-    "<h2>Game Over</h2><p>Try again!</p>";
+  gameState="gameover";
+  ctx.clearRect(0,0,320,320);
+  ctx.fillStyle="#4a0015";
+  ctx.font="16px monospace";
+  ctx.fillText("GAME OVER",100,150);
+  ctx.fillText("Refresh to try again",60,180);
 }
 
 // Win animation
 function win(){
-  beep(800,0.2);
-  setTimeout(()=>beep(1000,0.2),150);
-
+  gameState="win";
+  ctx.clearRect(0,0,320,320);
   let frame=0;
   const anim=setInterval(()=>{
     ctx.clearRect(0,0,320,320);
     ctx.fillStyle="#4a0015";
     ctx.font="16px monospace";
-
     const msg=[
       "YOU WIN!",
       "",
       "Will you be my",
       "Valentine? ♥"
     ];
-
-    msg.forEach((t,i)=>{
-      ctx.fillText(t,40,60+i*30+frame);
-    });
-
+    msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
     frame+=2;
     if(frame>40) clearInterval(anim);
-
   },60);
+  beep(800,0.2);
+  setTimeout(()=>beep(1000,0.2),150);
 }
 
-// Start game
+// Heartbeat animation
+function animateBeat(){
+  heartbeat += 0.1*beatDirection;
+  if(heartbeat>1 || heartbeat<0) beatDirection*=-1;
+  draw();
+  requestAnimationFrame(animateBeat);
+}
+
+// Enemy interval
 setInterval(moveEnemies,600);
+
+// Start heartbeat animation
+animateBeat();
+
+// Initial draw
 draw();
 </script>
 
