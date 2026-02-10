@@ -14,9 +14,11 @@ body {
   background: #ff9bb3;
   border: 12px solid #4a0015;
   width: 320px;
+  height: 450px;
   margin: 20px auto;
   padding: 10px;
   position: relative;
+  overflow: hidden;
 }
 canvas {
   background: #ff9bb3;
@@ -61,7 +63,7 @@ canvas {
 <h2>Valentine Chase Game</h2>
 <div id="screen">
   <div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
-  <canvas id="game" width="320" height="640"></canvas>
+  <canvas id="game" width="320" height="450"></canvas>
 
   <div id="startScreen">
     <div>Hi baby, let's put your Pac-Man skills to the test.<br>
@@ -131,14 +133,20 @@ function draw(){
   // Hearts
   hearts.forEach(h => drawHeart(h.x,h.y));
 
-  // Player Pac-Man circle with mouth animation
+  // Player Pac-Man circle with mouth facing movement
   const px = player.px + grid/2;
   const py = player.py + grid/2;
+  let angle = 0;
+  if(player.dx===1) angle = 0;       // Right
+  else if(player.dx===-1) angle = Math.PI; // Left
+  else if(player.dy===-1) angle = -Math.PI/2; // Up
+  else if(player.dy===1) angle = Math.PI/2;   // Down
+
   const mouthAngle = mouthOpen ? 0.25*Math.PI : 0;
   ctx.fillStyle="yellow";
   ctx.beginPath();
   ctx.moveTo(px,py);
-  ctx.arc(px,py,7, mouthAngle, Math.PI*2-mouthAngle);
+  ctx.arc(px,py,7, angle + mouthAngle, angle + 2*Math.PI - mouthAngle);
   ctx.closePath();
   ctx.fill();
   mouthOpen = !mouthOpen;
@@ -173,21 +181,18 @@ function setDirection(dx,dy){
 function update(){
   if(!player) return;
 
-  // Move player smoothly
   player.px += player.dx * 4;
   player.py += player.dy * 4;
 
-  // Keep player inside bounds
   player.px = Math.max(0, Math.min(320-16, player.px));
-  player.py = Math.max(0, Math.min(640-16, player.py));
+  player.py = Math.max(0, Math.min(450-16, player.py));
   player.x = Math.floor(player.px/grid);
   player.y = Math.floor(player.py/grid);
 
-  // Move ghosts smoothly
   ghosts.forEach(g=>{
     if(!g.targetX || Math.random()<0.02){
       g.targetX = Math.floor(Math.random()*20)*grid;
-      g.targetY = Math.floor(Math.random()*40)*grid;
+      g.targetY = Math.floor(Math.random()*28)*grid;
     }
     const dx = g.targetX - g.px;
     const dy = g.targetY - g.py;
@@ -205,7 +210,6 @@ function update(){
 
 // Collision checks
 function checkCollisions(){
-  // Collect hearts
   hearts = hearts.filter(h=>{
     if(h.x===player.x && h.y===player.y){
       score++;
@@ -217,7 +221,6 @@ function checkCollisions(){
     return true;
   });
 
-  // Ghost collision
   ghosts.forEach(g=>{
     if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
       lives--;
@@ -231,7 +234,6 @@ function checkCollisions(){
     }
   });
 
-  // Win
   if(hearts.length===0) win();
 }
 
@@ -239,22 +241,49 @@ function checkCollisions(){
 function gameOver(){
   clearInterval(gameInterval);
   beep(100,0.5);
-  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p>Try again!</p>";
+  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p> I believe in your skills so I doubt you'll see this. Anyway. Try again!</p>";
 }
 
-// Win animation
+// Win animation with floating hearts and centered text
 function win(){
   clearInterval(gameInterval);
   beep(800,0.2);
   setTimeout(()=>beep(1000,0.2),150);
+
+  const floatingHearts = [];
+  for(let i=0;i<50;i++){
+    floatingHearts.push({
+      x: Math.random()*320,
+      y: 450 + Math.random()*100,
+      size: 4 + Math.random()*4,
+      speed: 1 + Math.random()*2,
+      color: Math.random()>0.5 ? "red" : "#FF007F"
+    });
+  }
+
   let frame=0;
   const anim=setInterval(()=>{
     ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Floating hearts
+    floatingHearts.forEach(h=>{
+      ctx.fillStyle=h.color;
+      ctx.beginPath();
+      ctx.arc(h.x,h.y,h.size,0,Math.PI*2);
+      ctx.fill();
+      h.y -= h.speed;
+    });
+
+    // Centered win text
     ctx.fillStyle="#4a0015";
-    ctx.font="16px monospace";
-    const msg=["YOU WIN!","","Jose will you be my","Valentine? ♥"];
-    msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
-    frame+=2;
+    ctx.font="22px monospace";
+    ctx.textAlign="center";
+    ctx.fillText("YOU WIN!", canvas.width/2, 100 + frame);
+
+    ctx.font="26px monospace";
+    ctx.fillText("Miriam will you be my Valentine? ♥", canvas.width/2, 180 + frame);
+
+    frame += 1;
     if(frame>60) clearInterval(anim);
   },60);
 }
@@ -262,7 +291,6 @@ function win(){
 // Start game
 function startGame(){
   startScreen.style.display="none";
-  // Initialize variables
   score = 0;
   lives = 3;
   scoreEl.textContent = score;
@@ -273,16 +301,14 @@ function startGame(){
   sparkles = [];
   hearts = [];
   for(let i=0;i<40;i++){
-    hearts.push({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*40)});
+    hearts.push({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*28)});
   }
   ghosts = [
     {x:5, y:5, px:5*grid, py:5*grid, color:"red"},
-    {x:15, y:20, px:15*grid, py:20*grid, color:"blue"},
-    {x:10, y:35, px:10*grid, py:35*grid, color:"green"},
-    {x:0, y:0, px:0, py:0, color:"#FF007F"} // new 4th ghost
+    {x:15, y:10, px:15*grid, py:10*grid, color:"blue"},
+    {x:10, y:20, px:10*grid, py:20*grid, color:"green"},
+    {x:0, y:0, px:0, py:0, color:"#FF007F"}
   ];
-
-  // Start update loop
   if(gameInterval) clearInterval(gameInterval);
   gameInterval = setInterval(update,50);
   draw();
