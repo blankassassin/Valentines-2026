@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Valentine Pac-Man Arcade</title>
+<title>Valentine Chase Game</title>
 <style>
 body {
   background: #5c1a2b;
@@ -32,14 +32,42 @@ canvas {
   color: #4a0015;
   border-radius: 4px;
 }
+#startScreen {
+  position: absolute;
+  top:0; left:0;
+  width: 100%; height: 100%;
+  background: #ff9bb3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color:#4a0015;
+  font-family: monospace;
+}
+#startScreen button {
+  font-size: 20px;
+  padding: 10px 20px;
+  margin-top: 20px;
+  background: #FF6F91;
+  border: 2px solid #4a0015;
+  color: #4a0015;
+  border-radius: 4px;
+}
 </style>
 </head>
 <body>
 
-<h2>Valentine Pac-Man Quest</h2>
+<h2>Valentine Chase Game</h2>
 <div id="screen">
   <div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
-  <canvas id="game" width="320" height="320"></canvas>
+  <canvas id="game" width="320" height="640"></canvas>
+
+  <div id="startScreen">
+    <div>Hi baby, let's put your Pac-Man skills to the test.<br>
+    See you on the other side.<br>
+    Hit START to play</div>
+    <button onclick="startGame()">START</button>
+  </div>
 </div>
 
 <div class="controls">
@@ -56,44 +84,22 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
+const startScreen = document.getElementById("startScreen");
 const grid = 16;
 
 // Game variables
 let score = 0;
 let lives = 3;
-let player = {x:1, y:1, dx:0, dy:0};
+let player = {x:10, y:10, dx:0, dy:0, px:10*grid, py:10*grid};
 let beatFrame = 0;
 let mouthOpen = true;
+let gameInterval;
 
-// Maze layout: 0 = empty, 1 = wall
-const maze = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],
-  [1,0,1,0,1,0,1,1,0,1,0,1,1,0,1,0,1,0,0,1],
-  [1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,1],
-  [1,0,1,1,1,0,0,1,1,1,0,1,0,1,1,1,1,0,0,1],
-  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,0,0,1],
-  [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
-// Hearts / pellets
+// Hearts
 let hearts = [];
-for(let y=0;y<maze.length;y++){
-  for(let x=0;x<maze[y].length;x++){
-    if(maze[y][x]===0) hearts.push({x,y});
-  }
-}
 
-// Ghost enemies
-let ghosts = [
-  {x:18,y:1,color:"red"},
-  {x:1,y:9,color:"blue"},
-  {x:18,y:9,color:"green"}
-];
+// Ghost enemies with smooth positions
+let ghosts = [];
 
 // Sparkles
 let sparkles = [];
@@ -101,36 +107,13 @@ let sparkles = [];
 // Audio context
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// Pac-Man sounds
+// Chomp / collect sounds
 function beep(freq=300,dur=0.1){
   const o=audioCtx.createOscillator();
   o.frequency.value=freq;
   o.connect(audioCtx.destination);
   o.start();
   o.stop(audioCtx.currentTime+dur);
-}
-
-// Pac-Man background music
-let musicOsc;
-function startMusic(){
-  musicOsc = audioCtx.createOscillator();
-  musicOsc.type="square";
-  musicOsc.frequency.value=220;
-  musicOsc.connect(audioCtx.destination);
-  musicOsc.start();
-}
-startMusic();
-
-// Draw maze
-function drawMaze(){
-  for(let y=0;y<maze.length;y++){
-    for(let x=0;x<maze[y].length;x++){
-      if(maze[y][x]===1){
-        ctx.fillStyle="#4a0015";
-        ctx.fillRect(x*grid,y*grid,grid,grid);
-      }
-    }
-  }
 }
 
 // Draw red pixel heart pellet
@@ -157,14 +140,13 @@ function drawHeart(x,y){
 // Draw everything
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawMaze();
 
   // Hearts
   hearts.forEach(h => drawHeart(h.x,h.y));
 
   // Player Pac-Man circle with mouth animation
-  const px = player.x*grid+grid/2;
-  const py = player.y*grid+grid/2;
+  const px = player.px + grid/2;
+  const py = player.py + grid/2;
   const mouthAngle = mouthOpen ? 0.25*Math.PI : 0;
   ctx.fillStyle="yellow";
   ctx.beginPath();
@@ -177,108 +159,4 @@ function draw(){
   // Ghosts
   ghosts.forEach(g=>{
     ctx.fillStyle=g.color;
-    ctx.fillRect(g.x*grid,g.y*grid,14,14);
-  });
-
-  // Sparkles
-  sparkles.forEach(s=>{
-    ctx.fillStyle="white";
-    ctx.fillRect(s.x,s.y,s.size,s.size);
-    s.y -= 1;
-    s.size *= 0.95;
-  });
-  sparkles = sparkles.filter(s=>s.size>0);
-  beatFrame++;
-}
-
-// Player movement
-function setDirection(dx,dy){
-  player.dx = dx;
-  player.dy = dy;
-}
-
-// Update game
-function update(){
-  // Move player if no wall
-  const newX = player.x+player.dx;
-  const newY = player.y+player.dy;
-  if(maze[newY] && maze[newY][newX]===0){
-    player.x=newX;
-    player.y=newY;
-  }
-
-  checkCollisions();
-  moveGhosts();
-  draw();
-}
-setInterval(update,200);
-
-// Collision checks
-function checkCollisions(){
-  // Collect hearts
-  hearts = hearts.filter(h=>{
-    if(h.x===player.x && h.y===player.y){
-      score++;
-      scoreEl.textContent=score;
-      beep(500,0.1);
-      for(let i=0;i<5;i++) sparkles.push({x:player.x*grid+7, y:player.y*grid+7, size:2+Math.random()*2});
-      return false;
-    }
-    return true;
-  });
-
-  // Ghost collision
-  ghosts.forEach(g=>{
-    if(g.x===player.x && g.y===player.y){
-      lives--;
-      livesEl.textContent=lives;
-      beep(150,0.3);
-      player={x:1,y:1,dx:0,dy:0};
-      if(lives<=0) gameOver();
-    }
-  });
-
-  if(hearts.length===0) win();
-}
-
-// Ghost AI: chase player
-function moveGhosts(){
-  ghosts.forEach(g=>{
-    const dx = player.x - g.x;
-    const dy = player.y - g.y;
-    let moveX=0, moveY=0;
-    if(Math.abs(dx)>Math.abs(dy)) moveX = dx>0?1:-1;
-    else moveY = dy>0?1:-1;
-    if(maze[g.y] && maze[g.y][g.x+moveX]===0) g.x+=moveX;
-    else if(maze[g.y+moveY] && maze[g.y+moveY][g.x]===0) g.y+=moveY;
-  });
-}
-
-// Game over
-function gameOver(){
-  musicOsc.stop();
-  beep(100,0.5);
-  document.getElementById("screen").innerHTML="<h2>Game Over</h2><p>Try again!</p>";
-}
-
-// Win animation
-function win(){
-  musicOsc.stop();
-  beep(800,0.2);
-  setTimeout(()=>beep(1000,0.2),150);
-  
-  let frame=0;
-  const anim=setInterval(()=>{
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#4a0015";
-    ctx.font="16px monospace";
-    const msg=["YOU WIN!","","Miriam will you be my","Valentine? ♥"];
-    msg.forEach((t,i)=> ctx.fillText(t,40,60+i*30+frame));
-    frame+=2;
-    if(frame>60) clearInterval(anim);
-  },60);
-}
-</script>
-
-</body>
-</html>
+    ctx.fillRec
