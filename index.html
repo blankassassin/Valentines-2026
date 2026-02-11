@@ -106,6 +106,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
+    -------- <br>
     Hii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
@@ -129,7 +130,7 @@ const winMusic = document.getElementById("winMusic");
 const bgMusic = document.getElementById("bgMusic");
 
 const grid = 16;
-const WIN_SCORE = 35; 
+const WIN_SCORE = 3; 
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -139,14 +140,27 @@ winImage.src = "jandm.png";
 let winTextColorToggle = false;
 let lastToggle = Date.now();
 
+// Global AudioContext for mobile
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioUnlocked = false;
+
 /* ---------- MOBILE AUDIO HELPER ---------- */
 function playAudio(audio){
+    if(!audioUnlocked) return; // cannot play until user interaction
     audio.currentTime = 0;
     audio.play().catch(()=>{
-        // Try resuming AudioContext if blocked
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        context.resume().then(()=>audio.play());
+        // fallback: resume context then play
+        if(audioCtx.state === "suspended"){
+            audioCtx.resume().then(()=>audio.play());
+        }
     });
+}
+
+/* ---------- UNLOCK AUDIO ON FIRST USER INTERACTION ---------- */
+function unlockAudio(){
+    if(audioUnlocked) return;
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    audioUnlocked = true;
 }
 
 /* ---------- HELPER: UNIQUE POSITIONS ---------- */
@@ -331,7 +345,6 @@ function draw(){
 function gameOver(){
     clearInterval(loop);
 
-    // Stop gameplay music
     bgMusic.pause();
     bgMusic.currentTime = 0;
 
@@ -416,11 +429,10 @@ function update(){
       state = "win";
       clearInterval(loop);
 
-      // Stop gameplay music
       bgMusic.pause();
       bgMusic.currentTime = 0;
 
-      // Play win music safely on mobile
+      // Play win music safely
       winMusic.loop = true;
       playAudio(winMusic);
 
@@ -432,9 +444,10 @@ function update(){
 
 /* ---------- START GAME ---------- */
 function startGame(){
+    unlockAudio(); // <-- Unlock audio for mobile
+
     startScreen.style.display="none";
 
-    // Play gameplay music safely
     bgMusic.loop = true;
     playAudio(bgMusic);
 
