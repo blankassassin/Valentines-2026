@@ -137,31 +137,36 @@ ctx.fillRect(x+8,y+6,2,3);
 
 /* ---------- KIRBY PLAYER ---------- */
 function drawKirby(px,py,celebrate=false,sizeOverride){
-let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
-let size=sizeOverride || 8;
+    let bounce = celebrate ? Math.sin(Date.now()/120)*4 : Math.sin(Date.now()/180)*1.5;
+    let size = sizeOverride || 8;
 
-// body
-ctx.fillStyle="#ff9bd4";
-ctx.beginPath();
-ctx.arc(px,py+bounce,size,0,Math.PI*2);
-ctx.fill();
+    // body
+    ctx.fillStyle="#ff9bd4";
+    ctx.beginPath();
+    ctx.arc(px, py+bounce, size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle="black"; // outline only for body
+    ctx.lineWidth=1;
+    ctx.stroke();
 
-// eyes
-ctx.fillStyle="#000";
-ctx.fillRect(px-3,py-2+bounce,2,4);
-ctx.fillRect(px+1,py-2+bounce,2,4);
+    // eyes
+    ctx.fillStyle="#000";
+    ctx.fillRect(px-3, py-2+bounce, 2,4);
+    ctx.fillRect(px+1, py-2+bounce, 2,4);
 
-// blush
-ctx.fillStyle="#ff6fa5";
-ctx.fillRect(px-6,py+2+bounce,2,1);
-ctx.fillRect(px+4,py+2+bounce,2,1);
+    // blush
+    ctx.fillStyle="#ff6fa5";
+    ctx.fillRect(px-6, py+2+bounce, 2,1);
+    ctx.fillRect(px+4, py+2+bounce, 2,1);
 
-// feet
-ctx.fillStyle="#d94f8a";
-ctx.beginPath();
-ctx.ellipse(px-3,py+7+bounce,3,2,0,0,Math.PI*2);
-ctx.ellipse(px+3,py+7+bounce,3,2,0,0,Math.PI*2);
-ctx.fill();
+    // feet
+    ctx.fillStyle="#d94f8a";
+    ctx.beginPath();
+    ctx.ellipse(px-3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
+    ctx.ellipse(px+3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle="black"; // outline for feet
+    ctx.stroke();
 }
 
 /* ---------- SPARKLES ---------- */
@@ -220,7 +225,7 @@ ctx.textAlign="center";
 ctx.font="32px monospace";
 ctx.fillText("YOU WIN!",160,120);
 
-drawKirby(160,170,true,12);
+drawKirby(160,170,true,12); // bigger Kirby with outline
 drawFireworks();
 
 ctx.fillStyle="#8B0000";
@@ -240,14 +245,16 @@ ghosts.forEach(drawGhost);
 
 /* ---------- GAME OVER ---------- */
 function gameOver(){
-clearInterval(loop); // stop the game loop
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle="#4a0015"; // dark red
-ctx.font="18px monospace";
-ctx.textAlign="center";
-ctx.fillText("I believe in your skills so, I doubt you'll see this", canvas.width/2, canvas.height/2 - 20);
-ctx.fillText("Anyway, just incase you do see this:", canvas.width/2, canvas.height/2 + 10);
-ctx.fillText("Try Again!", canvas.width/2, canvas.height/2 + 40);
+    clearInterval(loop); // stop the game loop
+    startScreen.style.display = "flex"; // show overlay
+    startScreen.innerHTML = `
+        <div>
+        I believe in your skills so, I doubt you'll see this<br>
+        Anyway if you see this:<br>
+        Try Again!
+        </div>
+        <button onclick="startGame()">START</button>
+    `;
 }
 
 /* ---------- UPDATE ---------- */
@@ -292,7 +299,7 @@ livesEl.textContent=lives;
 player.px=160;
 player.py=200;
 if(lives <= 0){
-    gameOver(); // custom game over screen
+    gameOver(); // show custom overlay
     return;
 }
 }
@@ -308,7 +315,11 @@ draw();
 }
 
 /* ---------- GAME CONTROL ---------- */
-function startGame(){startScreen.style.display="none";reset();}
+function startGame(){
+    startScreen.style.display="none";
+    reset();
+}
+
 function reset(){
 state="play";
 score=0;lives=3;
