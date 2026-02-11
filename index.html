@@ -82,7 +82,9 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
 <div>
-Hi baby, let's put your Pac-Man skills to the test.<br>
+Hi baby,<br>
+let's put your Pac-Man <br>
+skills to the test.<br>
 See you on the other side!<br>
 ------ <br>
 Hit START to play!
@@ -94,258 +96,277 @@ Hit START to play!
 <div id="joystick"><div id="stick"></div></div>
 
 <script>
-const canvas=game;
-const ctx=canvas.getContext("2d");
-const scoreEl=document.getElementById("score");
-const livesEl=document.getElementById("lives");
-const startScreen=document.getElementById("startScreen");
+const canvas = game;
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const livesEl = document.getElementById("lives");
+const startScreen = document.getElementById("startScreen");
 
-const grid=16;
-let player,hearts,ghosts,sparkles=[],fireworks=[];
-let score,lives,loop,state="menu";
+const grid = 16;
+let player, hearts, ghosts, sparkles = [], fireworks = [];
+let score, lives, state = "menu", lastTime = 0;
 
 /* ---------- HEARTS ---------- */
-function drawHeart(x,y){
-ctx.fillStyle="#ff3333";
-ctx.beginPath();
-ctx.arc(x*grid+8,y*grid+6,4,Math.PI,0);
-ctx.arc(x*grid+12,y*grid+6,4,Math.PI,0);
-ctx.lineTo(x*grid+10,y*grid+14);
-ctx.fill();
+function drawHeart(x, y) {
+  ctx.fillStyle = "#ff3333";
+  ctx.beginPath();
+  ctx.arc(x * grid + 8, y * grid + 6, 4, Math.PI, 0);
+  ctx.arc(x * grid + 12, y * grid + 6, 4, Math.PI, 0);
+  ctx.lineTo(x * grid + 10, y * grid + 14);
+  ctx.fill();
 }
 
 /* ---------- GHOSTS ---------- */
-function drawGhost(g){
-const x=g.px,y=g.py,w=14,h=14;
-ctx.fillStyle=g.color;
-ctx.beginPath();
-ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
-ctx.lineTo(x+w,y+h-3);
-ctx.lineTo(x+w-3,y+h);
-ctx.lineTo(x+w-6,y+h-3);
-ctx.lineTo(x+w-9,y+h);
-ctx.lineTo(x+w-12,y+h-3);
-ctx.lineTo(x,y+h-3);
-ctx.closePath();
-ctx.fill();
-ctx.fillStyle="white";
-ctx.fillRect(x+3,y+6,2,3);
-ctx.fillRect(x+8,y+6,2,3);
+function drawGhost(g) {
+  const x = g.px, y = g.py, w = 14, h = 14;
+  ctx.fillStyle = g.color;
+  ctx.beginPath();
+  ctx.arc(x + w/2, y + w/2, w/2, Math.PI, 0);
+  ctx.lineTo(x + w, y + h - 3);
+  ctx.lineTo(x + w - 3, y + h);
+  ctx.lineTo(x + w - 6, y + h - 3);
+  ctx.lineTo(x + w - 9, y + h);
+  ctx.lineTo(x + w - 12, y + h - 3);
+  ctx.lineTo(x, y + h - 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "white";
+  ctx.fillRect(x + 3, y + 6, 2, 3);
+  ctx.fillRect(x + 8, y + 6, 2, 3);
 }
 
 /* ---------- KIRBY PLAYER ---------- */
-function drawKirby(px,py,celebrate=false){
-let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
-let size=8;
+function drawKirby(px, py, celebrate = false) {
+  let bounce = celebrate ? Math.sin(Date.now()/120)*4 : Math.sin(Date.now()/180)*1.5;
+  let size = 8;
 
-// body
-ctx.fillStyle="#ff9bd4";
-ctx.beginPath();
-ctx.arc(px,py+bounce,size,0,Math.PI*2);
-ctx.fill();
+  // body
+  ctx.fillStyle = "#ff9bd4";
+  ctx.beginPath();
+  ctx.arc(px, py + bounce, size, 0, Math.PI*2);
+  ctx.fill();
 
-// eyes
-ctx.fillStyle="#000";
-ctx.fillRect(px-3,py-2+bounce,2,4);
-ctx.fillRect(px+1,py-2+bounce,2,4);
+  // eyes
+  ctx.fillStyle = "#000";
+  ctx.fillRect(px-3, py-2+bounce, 2, 4);
+  ctx.fillRect(px+1, py-2+bounce, 2, 4);
 
-// blush
-ctx.fillStyle="#ff6fa5";
-ctx.fillRect(px-6,py+2+bounce,2,1);
-ctx.fillRect(px+4,py+2+bounce,2,1);
+  // blush
+  ctx.fillStyle = "#ff6fa5";
+  ctx.fillRect(px-6, py+2+bounce, 2, 1);
+  ctx.fillRect(px+4, py+2+bounce, 2, 1);
 
-// feet
-ctx.fillStyle="#d94f8a";
-ctx.beginPath();
-ctx.ellipse(px-3,py+7+bounce,3,2,0,0,Math.PI*2);
-ctx.ellipse(px+3,py+7+bounce,3,2,0,0,Math.PI*2);
-ctx.fill();
+  // feet
+  ctx.fillStyle = "#d94f8a";
+  ctx.beginPath();
+  ctx.ellipse(px-3, py+7+bounce, 3, 2, 0, 0, Math.PI*2);
+  ctx.ellipse(px+3, py+7+bounce, 3, 2, 0, 0, Math.PI*2);
+  ctx.fill();
 }
 
 /* ---------- SPARKLES ---------- */
-function spawnSparkle(){
-sparkles.push({
-x:player.px+8,
-y:player.py+8,
-size:2+Math.random()*2,
-life:20
-});
+function spawnSparkle() {
+  sparkles.push({
+    x: player.px + 8,
+    y: player.py + 8,
+    size: 2 + Math.random() * 2,
+    life: 20
+  });
 }
-function drawSparkles(){
-sparkles.forEach(s=>{
-ctx.fillStyle="white";
-ctx.fillRect(s.x,s.y,s.size,s.size);
-s.y-=0.5;
-s.life--;
-});
-sparkles=sparkles.filter(s=>s.life>0);
+function drawSparkles() {
+  sparkles.forEach(s => {
+    ctx.fillStyle = "white";
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+    s.y -= 0.5;
+    s.life--;
+  });
+  sparkles = sparkles.filter(s => s.life > 0);
 }
 
 /* ---------- FIREWORKS ---------- */
-function spawnFirework(){
-for(let i=0;i<20;i++){
-fireworks.push({
-x:160,
-y:170,
-vx:(Math.random()-0.5)*4,
-vy:(Math.random()-1.5)*4,
-size:2+Math.random()*2,
-life:30+Math.random()*20,
-color:`hsl(${Math.random()*360},100%,70%)`
-});
+function spawnFirework() {
+  for(let i=0;i<20;i++){
+    fireworks.push({
+      x:160,
+      y:170,
+      vx:(Math.random()-0.5)*4,
+      vy:(Math.random()-1.5)*4,
+      size:2+Math.random()*2,
+      life:30+Math.random()*20,
+      color:`hsl(${Math.random()*360},100%,70%)`
+    });
+  }
 }
-}
-function drawFireworks(){
-fireworks.forEach(f=>{
-ctx.fillStyle=f.color;
-ctx.fillRect(f.x,f.y,f.size,f.size);
-f.x+=f.vx;
-f.y+=f.vy;
-f.vy+=0.05;
-f.life--;
-});
-fireworks=fireworks.filter(f=>f.life>0);
+function drawFireworks() {
+  fireworks.forEach(f => {
+    ctx.fillStyle = f.color;
+    ctx.fillRect(f.x, f.y, f.size, f.size);
+    f.x += f.vx;
+    f.y += f.vy;
+    f.vy += 0.05;
+    f.life--;
+  });
+  fireworks = fireworks.filter(f => f.life > 0);
 }
 
 /* ---------- DRAW ---------- */
-function draw(){
-ctx.clearRect(0,0,320,450);
+function draw() {
+  ctx.clearRect(0,0,320,450);
 
-if(state==="win"){
-ctx.fillStyle="#4a0015";
-ctx.textAlign="center";
-ctx.font="28px monospace";
-ctx.fillText("YOU WIN!",160,120);
+  if(state==="win"){
+    ctx.fillStyle="#4a0015";
+    ctx.textAlign="center";
+    ctx.font="28px monospace";
+    ctx.fillText("YOU WIN!",160,120);
 
-drawKirby(160,170,true);
+    drawKirby(160,170,true);
 
-drawFireworks();
+    drawFireworks();
 
-ctx.font="24px monospace";
-ctx.fillText("Miriam,",160,250);
-ctx.fillText("Will You Be",160,285);
-ctx.fillText("My Valentine? ♥",160,320);
+    ctx.font="24px monospace";
+    ctx.fillText("Miriam,",160,250);
+    ctx.fillText("Will You Be",160,285);
+    ctx.fillText("My Valentine? ♥",160,320);
 
-return;
-}
+    return;
+  }
 
-hearts.forEach(h=>drawHeart(h.x,h.y));
-drawSparkles();
-drawKirby(player.px+8,player.py+8);
-ghosts.forEach(drawGhost);
+  hearts.forEach(h => drawHeart(h.x,h.y));
+  drawSparkles();
+  drawKirby(player.px+8,player.py+8);
+  ghosts.forEach(drawGhost);
 }
 
 /* ---------- UPDATE ---------- */
-function update(){
-if(state!=="play")return;
+function update() {
+  if(state!=="play") return;
 
-player.px+=player.dx*4;
-player.py+=player.dy*4;
+  // Move player
+  player.px += player.dx*4;
+  player.py += player.dy*4;
 
-player.px=Math.max(0,Math.min(304,player.px));
-player.py=Math.max(0,Math.min(434,player.py));
+  player.px = Math.max(0, Math.min(304, player.px));
+  player.py = Math.max(0, Math.min(434, player.py));
 
-player.x=Math.floor(player.px/grid);
-player.y=Math.floor(player.py/grid);
+  player.x = Math.floor(player.px/grid);
+  player.y = Math.floor(player.py/grid);
 
-if(player.dx||player.dy)spawnSparkle();
+  if(player.dx || player.dy) spawnSparkle();
 
-ghosts.forEach(g=>{
-if(!g.tx||Math.random()<0.02){
-g.tx=Math.random()*300;
-g.ty=Math.random()*430;
+  // Move ghosts
+  ghosts.forEach(g=>{
+    if(!g.tx || Math.random()<0.02){
+      g.tx = Math.random()*300;
+      g.ty = Math.random()*430;
+    }
+    const dx = g.tx - g.px;
+    const dy = g.ty - g.py;
+    const d = Math.hypot(dx,dy);
+    if(d>1){ g.px += dx/d * 1.5; g.py += dy/d * 1.5; }
+  });
+
+  // Collect hearts
+  hearts = hearts.filter(h => {
+    if(h.x === player.x && h.y === player.y){
+      score++;
+      scoreEl.textContent = score;
+      return false;
+    }
+    return true;
+  });
+
+  // Ghost collision (circular)
+  ghosts.forEach(g=>{
+    const dist = Math.hypot(player.px - g.px, player.py - g.py);
+    if(dist < 12){
+      lives--;
+      livesEl.textContent = lives;
+      player.px = 160;
+      player.py = 200;
+      if(lives <= 0) reset();
+    }
+  });
+
+  if(score >= 20){
+    state="win";
+    spawnFirework();
+  }
+
+  draw();
 }
-const dx=g.tx-g.px;
-const dy=g.ty-g.py;
-const d=Math.hypot(dx,dy);
-if(d>1){g.px+=dx/d*1.5;g.py+=dy/d*1.5;}
-});
 
-hearts=hearts.filter(h=>{
-if(h.x===player.x&&h.y===player.y){
-score++;
-scoreEl.textContent=score;
-return false;
-}
-return true;
-});
-
-ghosts.forEach(g=>{
-if(Math.abs(g.px-player.px)<12&&Math.abs(g.py-player.py)<12){
-lives--;
-livesEl.textContent=lives;
-player.px=160;
-player.py=200;
-if(lives<=0)reset();
-}
-});
-
-if(score>=20){
-state="win";
-spawnFirework();
-clearInterval(loop);
-}
-
-draw();
+/* ---------- GAME LOOP ---------- */
+function gameLoop(timestamp){
+  update();
+  if(state !== "win") requestAnimationFrame(gameLoop);
 }
 
 /* ---------- GAME CONTROL ---------- */
-function startGame(){startScreen.style.display="none";reset();}
+function startGame(){ startScreen.style.display="none"; reset(); }
 function reset(){
-state="play";
-score=0;lives=3;
-scoreEl.textContent=score;
-livesEl.textContent=lives;
+  state="play";
+  score = 0; lives = 3;
+  scoreEl.textContent = score;
+  livesEl.textContent = lives;
 
-player={px:160,py:200,dx:0,dy:0};
-sparkles=[];
-hearts=[];
-for(let i=0;i<20;i++){hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});}
-ghosts=[
-{px:40,py:40,color:"#cc0000"},
-{px:200,py:60,color:"#00ffff"},
-{px:100,py:200,color:"#ff8000"},
-{px:250,py:300,color:"#ff007f"}
-];
-clearInterval(loop);
-loop=setInterval(update,50);
+  player = {px:160, py:200, dx:0, dy:0};
+  sparkles = [];
+  hearts = [];
+  for(let i=0;i<20;i++){
+    hearts.push({
+      x: Math.floor(Math.random()*18)+1,
+      y: Math.floor(Math.random()*26)+1
+    });
+  }
+
+  ghosts = [
+    {px:40, py:40, color:"#cc0000"},
+    {px:200, py:60, color:"#00ffff"},
+    {px:100, py:200, color:"#ff8000"},
+    {px:250, py:300, color:"#ff007f"}
+  ];
+
+  lastTime = 0;
+  requestAnimationFrame(gameLoop);
 }
 
-/* ---------- CONTROLS ---------- */
-document.addEventListener("keydown",e=>{
-if(state!=="play")return;
-if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
-if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
-if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
-if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
+/* ---------- KEYBOARD CONTROLS ---------- */
+document.addEventListener("keydown", e=>{
+  if(state!=="play") return;
+  if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
+  if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
+  if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
+  if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 
 /* ---------- JOYSTICK ---------- */
-const joystick=document.getElementById("joystick");
-const stick=document.getElementById("stick");
-let sx=0,sy=0,moving=false;
+const joystick = document.getElementById("joystick");
+const stick = document.getElementById("stick");
+let sx=0, sy=0, moving=false;
 
 function updateDir(){
-if(!player)return;
-const ax=Math.abs(sx),ay=Math.abs(sy);
-if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
-else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
-else{player.dy=sy>0?1:-1;player.dx=0;}
+  if(!player) return;
+  const ax=Math.abs(sx), ay=Math.abs(sy);
+  if(Math.max(ax,ay)<10){ player.dx=0; player.dy=0; }
+  else if(ax>ay){ player.dx=sx>0?1:-1; player.dy=0; }
+  else{ player.dy=sy>0?1:-1; player.dx=0; }
 }
-joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
-joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
-joystick.addEventListener("touchend",()=>{moving=false;stick.style.transform="translate(-50%,-50%)";sx=sy=0;updateDir();});
+
+joystick.addEventListener("touchstart", e => { moving=true; move(e.touches[0]); });
+joystick.addEventListener("touchmove", e => { if(moving) move(e.touches[0]); });
+joystick.addEventListener("touchend", ()=>{ moving=false; stick.style.transform="translate(-50%,-50%)"; sx=sy=0; updateDir(); });
+
 function move(t){
-const r=joystick.getBoundingClientRect();
-const cx=r.left+r.width/2;
-const cy=r.top+r.height/2;
-sx=t.clientX-cx;
-sy=t.clientY-cy;
-const max=r.width/2-30;
-const a=Math.atan2(sy,sx);
-const d=Math.min(Math.hypot(sx,sy),max);
-stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-updateDir();
+  const r = joystick.getBoundingClientRect();
+  const cx = r.left + r.width/2;
+  const cy = r.top + r.height/2;
+  sx = t.clientX - cx;
+  sy = t.clientY - cy;
+  const max = r.width/2 - 30;
+  const a = Math.atan2(sy,sx);
+  const d = Math.min(Math.hypot(sx,sy), max);
+  stick.style.transform = `translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
+  updateDir();
 }
 </script>
 
