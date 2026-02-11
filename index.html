@@ -118,10 +118,6 @@ ctx.arc(x*grid+8,y*grid+6,4,Math.PI,0);
 ctx.arc(x*grid+12,y*grid+6,4,Math.PI,0);
 ctx.lineTo(x*grid+10,y*grid+14);
 ctx.fill();
-// outline
-ctx.strokeStyle="black";
-ctx.lineWidth=1;
-ctx.stroke();
 }
 
 /* ---------- GHOSTS ---------- */
@@ -138,11 +134,9 @@ ctx.lineTo(x+w-12,y+h-3);
 ctx.lineTo(x,y+h-3);
 ctx.closePath();
 ctx.fill();
-// outline
 ctx.strokeStyle="black";
 ctx.lineWidth=1;
 ctx.stroke();
-
 ctx.fillStyle="white";
 ctx.fillRect(x+3,y+6,2,3);
 ctx.fillRect(x+8,y+6,2,3);
@@ -153,32 +147,28 @@ function drawKirby(px,py,celebrate=false,sizeOverride){
     let bounce = celebrate ? Math.sin(Date.now()/120)*4 : Math.sin(Date.now()/180)*1.5;
     let size = sizeOverride || 8;
 
-    // body
     ctx.fillStyle="#ff9bd4";
     ctx.beginPath();
     ctx.arc(px, py+bounce, size, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle="black"; // outline only for body
+    ctx.strokeStyle="black";
     ctx.lineWidth=1;
     ctx.stroke();
 
-    // eyes
     ctx.fillStyle="#000";
     ctx.fillRect(px-3, py-2+bounce, 2,4);
     ctx.fillRect(px+1, py-2+bounce, 2,4);
 
-    // blush
     ctx.fillStyle="#ff6fa5";
     ctx.fillRect(px-6, py+2+bounce, 2,1);
     ctx.fillRect(px+4, py+2+bounce, 2,1);
 
-    // feet
     ctx.fillStyle="#d94f8a";
     ctx.beginPath();
     ctx.ellipse(px-3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
     ctx.ellipse(px+3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
     ctx.fill();
-    ctx.strokeStyle="black"; // outline for feet
+    ctx.strokeStyle="black";
     ctx.stroke();
 }
 
@@ -202,11 +192,11 @@ sparkles=sparkles.filter(s=>s.life>0);
 }
 
 /* ---------- FIREWORKS ---------- */
-function spawnFirework(){
-for(let i=0;i<20;i++){
+function spawnFirework(x=160,y=170){
+for(let i=0;i<5;i++){ // spawn small bursts continuously
 fireworks.push({
-x:160,
-y:170,
+x:x,
+y:y,
 vx:(Math.random()-0.5)*4,
 vy:(Math.random()-1.5)*4,
 size:2+Math.random()*2,
@@ -233,23 +223,34 @@ ctx.clearRect(0,0,320,450);
 
 // Win screen
 if(state==="win"){
+// Spawn fireworks continuously
+spawnFirework();
+
+drawFireworks();
+
 ctx.fillStyle = "black";
 ctx.textAlign="center";
 ctx.font="32px monospace";
 ctx.fillText("YOU WIN!",160,120);
 
-// Draw win image instead of Kirby
-if(winImage.complete) {
-    ctx.drawImage(winImage, 110, 150, 100, 100); // centered & sized
+// Draw win image dynamically centered
+if(winImage.complete){
+    const maxWidth = canvas.width * 0.5;
+    const maxHeight = canvas.height * 0.3;
+    let iw = winImage.width;
+    let ih = winImage.height;
+    let scale = Math.min(maxWidth/iw, maxHeight/ih);
+    let w = iw * scale;
+    let h = ih * scale;
+    ctx.drawImage(winImage, (canvas.width-w)/2, 150, w, h);
 }
-
-drawFireworks();
 
 ctx.fillStyle="#8B0000";
 ctx.font="24px monospace";
 ctx.fillText("Miriam,",160,270);
 ctx.fillText("Will You Be",160,305);
 ctx.fillText("My Valentine? ♥",160,340);
+
 return;
 }
 
@@ -262,12 +263,13 @@ ghosts.forEach(drawGhost);
 
 /* ---------- GAME OVER ---------- */
 function gameOver(){
-    clearInterval(loop); // stop the game loop
-    startScreen.style.display = "flex"; // show overlay
+    clearInterval(loop);
+    startScreen.style.display = "flex";
     startScreen.innerHTML = `
         <div>
-        I believe in your skills so, I doubt you'll see this<br>
-        Anyway if you see this:<br>
+        I believe in your skills so,<br>
+        I doubt you'll see this<br>
+        Anyway if you do see this:<br>
         Try Again!
         </div>
         <button onclick="startGame()">START</button>
@@ -316,7 +318,7 @@ livesEl.textContent=lives;
 player.px=160;
 player.py=200;
 if(lives <= 0){
-    gameOver(); // show custom overlay
+    gameOver();
     return;
 }
 }
@@ -324,7 +326,6 @@ if(lives <= 0){
 
 if(score>=20){
 state="win";
-spawnFirework();
 clearInterval(loop);
 }
 
