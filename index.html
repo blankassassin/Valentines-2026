@@ -83,7 +83,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hi baby,<br>
+    Hii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side!<br>
@@ -104,7 +104,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 2; // hearts needed to win
+const WIN_SCORE = 2;
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -112,7 +112,7 @@ let playerSpeedBoost = false, playerSpeedBoostTime = 0;
 let winImage = new Image();
 winImage.src = "jandm.png";
 
-/* ---------- HEARTS ---------- */
+/* HEART */
 function drawHeart(x,y){
   ctx.fillStyle="#ff3333";
   ctx.beginPath();
@@ -122,7 +122,7 @@ function drawHeart(x,y){
   ctx.fill();
 }
 
-/* ---------- GHOSTS ---------- */
+/* GHOST */
 function drawGhost(g){
   const x=g.px,y=g.py,w=14,h=14;
   ctx.fillStyle=g.color;
@@ -136,52 +136,37 @@ function drawGhost(g){
   ctx.lineTo(x,y+h-3);
   ctx.closePath();
   ctx.fill();
+
   ctx.strokeStyle="black";
-  ctx.lineWidth=1;
   ctx.stroke();
-  ctx.fillStyle = "white";
-ctx.fillRect(x+3, y+4, 3, 5);   // left eye
-ctx.strokeStyle = "black";       // outline color
-ctx.lineWidth = 1;
-ctx.strokeRect(x+3, y+4, 3, 5); // left eye outline
 
-ctx.fillRect(x+8, y+4, 3, 5);   // right eye
-ctx.strokeRect(x+8, y+4, 3, 5); // right eye outline
+  /* 👇 UPDATED EYES */
+  ctx.fillStyle="#ededed";
+  ctx.fillRect(x+3,y+4,3,5);
+  ctx.fillRect(x+8,y+4,3,5);
 }
 
-/* ---------- KIRBY PLAYER ---------- */
-function drawKirby(px,py,celebrate=false,sizeOverride){
-    let bounce = celebrate ? Math.sin(Date.now()/120)*4 : Math.sin(Date.now()/180)*1.5;
-    let size = sizeOverride || 8;
+/* PLAYER */
+function drawKirby(px,py){
+  ctx.fillStyle="#ff9bd4";
+  ctx.beginPath();
+  ctx.arc(px,py,8,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle="black";
+  ctx.stroke();
 
-    ctx.fillStyle="#ff9bd4";
-    ctx.beginPath();
-    ctx.arc(px, py+bounce, size, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle="black";
-    ctx.lineWidth=1;
-    ctx.stroke();
+  ctx.fillStyle="#000";
+  ctx.fillRect(px-3,py-2,2,4);
+  ctx.fillRect(px+1,py-2,2,4);
 
-    ctx.fillStyle="#000";
-    ctx.fillRect(px-3, py-2+bounce, 2,4);
-    ctx.fillRect(px+1, py-2+bounce, 2,4);
-
-    ctx.fillStyle="#ff6fa5";
-    ctx.fillRect(px-6, py+2+bounce, 2,1);
-    ctx.fillRect(px+4, py+2+bounce, 2,1);
-
-    ctx.fillStyle="#d94f8a";
-    ctx.beginPath();
-    ctx.ellipse(px-3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
-    ctx.ellipse(px+3, py+7+bounce, 3,2, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle="black";
-    ctx.stroke();
+  ctx.fillStyle="#ff6fa5";
+  ctx.fillRect(px-6,py+2,2,1);
+  ctx.fillRect(px+4,py+2,2,1);
 }
 
-/* ---------- SPARKLES ---------- */
+/* SPARKLES */
 function spawnSparkle(){
-  sparkles.push({x:player.px+8, y:player.py+8, size:2+Math.random()*2, life:20});
+  sparkles.push({x:player.px+8,y:player.py+8,size:2,life:20});
 }
 function drawSparkles(){
   sparkles.forEach(s=>{
@@ -193,92 +178,36 @@ function drawSparkles(){
   sparkles=sparkles.filter(s=>s.life>0);
 }
 
-/* ---------- STARS ---------- */
-function drawStars(){
-  stars.forEach(s=>{
-    ctx.fillStyle="yellow";
-    ctx.beginPath();
-    ctx.moveTo(s.x*grid+8, s.y*grid);
-    ctx.lineTo(s.x*grid+10, s.y*grid+6);
-    ctx.lineTo(s.x*grid+16, s.y*grid+6);
-    ctx.lineTo(s.x*grid+11, s.y*grid+10);
-    ctx.lineTo(s.x*grid+13, s.y*grid+16);
-    ctx.lineTo(s.x*grid+8, s.y*grid+12);
-    ctx.lineTo(s.x*grid+3, s.y*grid+16);
-    ctx.lineTo(s.x*grid+5, s.y*grid+10);
-    ctx.lineTo(s.x*grid, s.y*grid+6);
-    ctx.lineTo(s.x*grid+6, s.y*grid+6);
-    ctx.closePath();
-    ctx.fill();
-  });
-}
-
-/* ---------- DRAW ---------- */
+/* DRAW */
 function draw(){
   ctx.clearRect(0,0,320,450);
 
   if(state==="win"){
-    ctx.fillStyle = "black";
-    ctx.textAlign="center";
-    ctx.font="32px monospace";
-    ctx.fillText("YOU WIN!",160,60);
-
-    if(winImage.complete){
-        let size = 150;
-        ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
-    }
-
-    ctx.fillStyle="#8B0000";
-    ctx.font="24px monospace";
-    ctx.fillText("Miriam,",160,280);
-    ctx.fillText("Will You Be",160,310);
-    ctx.fillText("My Valentine? ♥",160,340);
-
-    ctx.fillStyle="#FF6F91";
-    ctx.fillRect(90,370,140,40);
-    ctx.strokeStyle="#4a0015";
-    ctx.lineWidth=2;
-    ctx.strokeRect(90,370,140,40);
     ctx.fillStyle="black";
-    ctx.font="20px monospace";
-    ctx.fillText("Restart",160,398);
-
+    ctx.font="32px monospace";
+    ctx.textAlign="center";
+    ctx.fillText("YOU WIN!",160,80);
     return;
   }
 
   hearts.forEach(h=>drawHeart(h.x,h.y));
-  drawStars();
   drawSparkles();
-  drawKirby(player.px+8, player.py+8);
+  drawKirby(player.px+8,player.py+8);
   ghosts.forEach(drawGhost);
 }
 
-/* ---------- GAME OVER ---------- */
+/* GAME OVER */
 function gameOver(){
-    clearInterval(loop);
-    startScreen.style.display = "flex";
-    startScreen.innerHTML = `
-        <div>
-        I believe in your skills so,<br>
-        I doubt you'll see this<br>
-        Anyway if you do see this:<br>
-        Try Again!
-        </div>
-        <button onclick="startGame()">START</button>
-    `;
+  clearInterval(loop);
+  startScreen.style.display="flex";
 }
 
-/* ---------- UPDATE ---------- */
+/* UPDATE */
 function update(){
   if(state!=="play") return;
 
-  let speed = 4;
-  if(playerSpeedBoost && Date.now() - playerSpeedBoostTime < 5000){
-      speed = 8;
-  } else { playerSpeedBoost = false; }
-
-  player.px += player.dx * speed;
-  player.py += player.dy * speed;
+  player.px+=player.dx*4;
+  player.py+=player.dy*4;
 
   player.px=Math.max(0,Math.min(304,player.px));
   player.py=Math.max(0,Math.min(434,player.py));
@@ -288,140 +217,79 @@ function update(){
 
   if(player.dx||player.dy) spawnSparkle();
 
-  // Smooth ghost movement
-  ghosts.forEach(g => {
-      const dx = g.tx - g.px;
-      const dy = g.ty - g.py;
-      const d = Math.hypot(dx, dy);
-
-      if(!g.tx || d < 2){
-          g.tx = Math.random() * 300;
-          g.ty = Math.random() * 430;
-      }
-
-      if(d > 0){
-          g.px += dx/d * 1.5;
-          g.py += dy/d * 1.5;
-      }
+  ghosts.forEach(g=>{
+    if(!g.tx || Math.hypot(g.tx-g.px,g.ty-g.py)<2){
+      g.tx=Math.random()*300;
+      g.ty=Math.random()*430;
+    }
+    const dx=g.tx-g.px,dy=g.ty-g.py,d=Math.hypot(dx,dy);
+    g.px+=dx/d*1.5;
+    g.py+=dy/d*1.5;
   });
 
-  hearts = hearts.filter(h=>{
-      if(h.x===player.x && h.y===player.y){
-          score++;
-          scoreEl.textContent = score;
-          return false;
-      }
-      return true;
-  });
-
-  stars = stars.filter(s=>{
-      if(s.x===player.x && s.y===player.y){
-          playerSpeedBoost = true;
-          playerSpeedBoostTime = Date.now();
-          return false;
-      }
-      return true;
+  hearts=hearts.filter(h=>{
+    if(h.x===player.x && h.y===player.y){
+      score++;
+      scoreEl.textContent=score;
+      return false;
+    }
+    return true;
   });
 
   ghosts.forEach(g=>{
-      if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
-          lives--;
-          livesEl.textContent = lives;
-          player.px = 160;
-          player.py = 200;
-          if(lives <= 0) gameOver();
-      }
+    if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
+      lives--;
+      livesEl.textContent=lives;
+      player.px=160;player.py=200;
+      if(lives<=0) gameOver();
+    }
   });
 
-  if(score >= WIN_SCORE){
-      state = "win";
-      clearInterval(loop);
-      requestAnimationFrame(draw);
+  if(score>=WIN_SCORE){
+    state="win";
+    clearInterval(loop);
   }
 
   draw();
 }
 
-/* ---------- GAME CONTROL ---------- */
+/* START */
 function startGame(){
-    startScreen.style.display="none";
-    reset();
+  startScreen.style.display="none";
+  reset();
 }
 
 function reset(){
-    state="play";
-    score=0;lives=3;
-    scoreEl.textContent=score;
-    livesEl.textContent=lives;
+  state="play";
+  score=0;lives=3;
+  scoreEl.textContent=score;
+  livesEl.textContent=lives;
 
-    player={px:160,py:200,dx:0,dy:0};
-    sparkles=[];
-    hearts=[];
-    stars=[];
-    for(let i=0;i<WIN_SCORE;i++){
-        hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    }
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+  player={px:160,py:200,dx:0,dy:0};
+  sparkles=[];
+  hearts=[];
+  for(let i=0;i<WIN_SCORE;i++){
+    hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+  }
 
-    ghosts=[
-        {px:40,py:40,color:"#cc0000"},
-        {px:200,py:60,color:"#00ffff"},
-        {px:100,py:200,color:"#ff8000"},
-        {px:250,py:300,color:"#ff007f"}
-    ];
-    clearInterval(loop);
-    loop=setInterval(update,50);
+  ghosts=[
+    {px:40,py:40,color:"#cc0000"},
+    {px:200,py:60,color:"#00ffff"},
+    {px:100,py:200,color:"#ff8000"},
+    {px:250,py:300,color:"#ff007f"}
+  ];
+
+  clearInterval(loop);
+  loop=setInterval(update,50);
 }
 
-/* ---------- CONTROLS ---------- */
+/* KEYS */
 document.addEventListener("keydown",e=>{
-    if(state!=="play") return;
-    if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
-    if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
-    if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
-    if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
-});
-
-/* ---------- JOYSTICK ---------- */
-const joystick=document.getElementById("joystick");
-const stick=document.getElementById("stick");
-let sx=0,sy=0,moving=false;
-
-function updateDir(){
-    if(!player)return;
-    const ax=Math.abs(sx),ay=Math.abs(sy);
-    if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
-    else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
-    else{player.dy=sy>0?1:-1;player.dx=0;}
-}
-joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
-joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
-joystick.addEventListener("touchend",()=>{moving=false;stick.style.transform="translate(-50%,-50%)";sx=sy=0;updateDir();});
-function move(t){
-    const r=joystick.getBoundingClientRect();
-    const cx=r.left+r.width/2;
-    const cy=r.top+r.height/2;
-    sx=t.clientX-cx;
-    sy=t.clientY-cy;
-    const max=r.width/2-30;
-    const a=Math.atan2(sy,sx);
-    const d=Math.min(Math.hypot(sx,sy),max);
-    stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-    updateDir();
-}
-
-/* ---------- CLICK RESTART BUTTON ---------- */
-canvas.addEventListener("click", function(e){
-    if(state==="win"){
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        if(x>=90 && x<=230 && y>=370 && y<=410){
-            location.reload();
-        }
-    }
+  if(state!=="play") return;
+  if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
+  if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
+  if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
+  if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 </script>
 
