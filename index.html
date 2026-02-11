@@ -2,7 +2,15 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Miriam's Custom PacMan Game</title>
+<title>I Love You</title>
+
+<!-- Favicon & Mobile Home Screen Icons -->
+<link rel="shortcut icon" href="jmicon.jpg" type="image/jpeg">
+<link rel="apple-touch-icon" href="jmicon.jpg">
+<link rel="icon" sizes="192x192" href="jmicon.jpg">
+<meta name="theme-color" content="#5c1a2b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 
 <style>
 html,body{
@@ -83,7 +91,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hii baby,<br>
+    Hiiii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side shawty!<br>
@@ -104,7 +112,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 2; // hearts needed to win
+const WIN_SCORE = 3; // hearts needed to win
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -127,8 +135,6 @@ function drawHeart(x,y){
 /* ---------- GHOSTS ---------- */
 function drawGhost(g){
   const x=g.px,y=g.py,w=14,h=14;
-
-  // ghost body
   ctx.fillStyle=g.color;
   ctx.beginPath();
   ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
@@ -140,17 +146,14 @@ function drawGhost(g){
   ctx.lineTo(x,y+h-3);
   ctx.closePath();
   ctx.fill();
-
   ctx.strokeStyle="black";
   ctx.lineWidth=1;
   ctx.stroke();
 
-  // white eyes
   ctx.fillStyle="white";
   ctx.fillRect(x+3,y+4,3,5);
   ctx.fillRect(x+8,y+4,3,5);
 
-  // determine movement direction toward target
   const dx = (g.tx ?? g.px) - g.px;
   const dy = (g.ty ?? g.py) - g.py;
 
@@ -163,23 +166,10 @@ function drawGhost(g){
     dirY = dy > 0 ? 1 : -1;
   }
 
-  // blue pupils
   const offset = 1.5;
   ctx.fillStyle="#0066c9";
-
-  // left eye pupil
-  ctx.fillRect(
-    x+4 + dirX*offset,
-    y+5 + dirY*offset,
-    1.5,2
-  );
-
-  // right eye pupil
-  ctx.fillRect(
-    x+9 + dirX*offset,
-    y+5 + dirY*offset,
-    1.5,2
-  );
+  ctx.fillRect(x+4 + dirX*offset, y+5 + dirY*offset, 1.5,2);
+  ctx.fillRect(x+9 + dirX*offset, y+5 + dirY*offset, 1.5,2);
 }
 
 /* ---------- KIRBY PLAYER ---------- */
@@ -250,7 +240,6 @@ function drawStars(){
 function draw(){
   ctx.clearRect(0,0,320,450);
 
-  // Win screen
   if(state==="win"){
     if(Date.now() - lastToggle > 500){
         winTextColorToggle = !winTextColorToggle;
@@ -311,13 +300,11 @@ function gameOver(){
 /* ---------- UPDATE ---------- */
 function update(){
   if(state!=="play") return;
-
   let speed = 4;
   if(playerSpeedBoost && Date.now() - playerSpeedBoostTime < 5000){
       speed = 8;
   } else { playerSpeedBoost = false; }
 
-  // update player
   player.px += player.dx * speed;
   player.py += player.dy * speed;
 
@@ -329,7 +316,6 @@ function update(){
 
   if(player.dx||player.dy) spawnSparkle();
 
-  // ---------- IMPROVED GHOST MOVEMENT ----------
   ghosts.forEach(g=>{
       const dx = (g.tx ?? g.px) - g.px;
       const dy = (g.ty ?? g.py) - g.py;
@@ -346,7 +332,6 @@ function update(){
       }
   });
 
-  // collect hearts
   hearts = hearts.filter(h=>{
       if(h.x===player.x && h.y===player.y){
           score++;
@@ -356,7 +341,6 @@ function update(){
       return true;
   });
 
-  // collect stars
   stars = stars.filter(s=>{
       if(s.x===player.x && s.y===player.y){
           playerSpeedBoost = true;
@@ -366,7 +350,6 @@ function update(){
       return true;
   });
 
-  // collisions with ghosts
   ghosts.forEach(g=>{
       if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
           lives--;
@@ -377,7 +360,6 @@ function update(){
       }
   });
 
-  // check win
   if(score >= WIN_SCORE){
       state = "win";
       clearInterval(loop);
@@ -387,7 +369,6 @@ function update(){
   draw();
 }
 
-/* ---------- GAME CONTROL ---------- */
 function startGame(){
     startScreen.style.display="none";
     reset();
@@ -407,7 +388,6 @@ function reset(){
         hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
 
-    // spawn 3 yellow stars
     for(let i=0;i<3;i++){
         stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
@@ -423,7 +403,6 @@ function reset(){
     loop=setInterval(update,50);
 }
 
-/* ---------- CONTROLS ---------- */
 document.addEventListener("keydown",e=>{
     if(state!=="play") return;
     if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
@@ -432,7 +411,6 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 
-/* ---------- JOYSTICK ---------- */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
@@ -460,7 +438,6 @@ function move(t){
     updateDir();
 }
 
-/* ---------- CLICK RESTART BUTTON ---------- */
 canvas.addEventListener("click", function(e){
     if(state==="win"){
         const rect = canvas.getBoundingClientRect();
