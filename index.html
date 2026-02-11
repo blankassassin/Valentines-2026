@@ -83,8 +83,8 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 <div id="startScreen">
 <div>
 Hi baby, let's put your Pac-Man skills to the test.<br>
-See you on the other side.<br>
-Hit START to play
+See you on the other side!<br>
+Hit START to play!
 </div>
 <button onclick="startGame()">START</button>
 </div>
@@ -100,12 +100,11 @@ const livesEl=document.getElementById("lives");
 const startScreen=document.getElementById("startScreen");
 
 const grid=16;
-
-let player,hearts,ghosts,sparkles=[];
+let player,hearts,ghosts,sparkles=[],fireworks=[];
 let score,lives,loop,state="menu";
+let inhale=false;
 
 /* ---------- HEARTS ---------- */
-
 function drawHeart(x,y){
 ctx.fillStyle="#ff3333";
 ctx.beginPath();
@@ -116,10 +115,8 @@ ctx.fill();
 }
 
 /* ---------- GHOSTS ---------- */
-
 function drawGhost(g){
 const x=g.px,y=g.py,w=14,h=14;
-
 ctx.fillStyle=g.color;
 ctx.beginPath();
 ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
@@ -131,22 +128,20 @@ ctx.lineTo(x+w-12,y+h-3);
 ctx.lineTo(x,y+h-3);
 ctx.closePath();
 ctx.fill();
-
 ctx.fillStyle="white";
 ctx.fillRect(x+3,y+6,2,3);
 ctx.fillRect(x+8,y+6,2,3);
 }
 
 /* ---------- KIRBY PLAYER ---------- */
-
 function drawKirby(px,py,celebrate=false){
-
 let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
+let size=inhale?10:8; // inhale expands Kirby
 
 // body
 ctx.fillStyle="#ff9bd4";
 ctx.beginPath();
-ctx.arc(px,py+bounce,8,0,Math.PI*2);
+ctx.arc(px,py+bounce,size,0,Math.PI*2);
 ctx.fill();
 
 // eyes
@@ -168,7 +163,6 @@ ctx.fill();
 }
 
 /* ---------- SPARKLES ---------- */
-
 function spawnSparkle(){
 sparkles.push({
 x:player.px+8,
@@ -177,7 +171,6 @@ size:2+Math.random()*2,
 life:20
 });
 }
-
 function drawSparkles(){
 sparkles.forEach(s=>{
 ctx.fillStyle="white";
@@ -188,19 +181,45 @@ s.life--;
 sparkles=sparkles.filter(s=>s.life>0);
 }
 
-/* ---------- DRAW ---------- */
+/* ---------- FIREWORKS ---------- */
+function spawnFirework(){
+for(let i=0;i<20;i++){
+fireworks.push({
+x:160,
+y:170,
+vx:(Math.random()-0.5)*4,
+vy:(Math.random()-1.5)*4,
+size:2+Math.random()*2,
+life:30+Math.random()*20,
+color:`hsl(${Math.random()*360},100%,70%)`
+});
+}
+}
+function drawFireworks(){
+fireworks.forEach(f=>{
+ctx.fillStyle=f.color;
+ctx.fillRect(f.x,f.y,f.size,f.size);
+f.x+=f.vx;
+f.y+=f.vy;
+f.vy+=0.05;
+f.life--;
+});
+fireworks=fireworks.filter(f=>f.life>0);
+}
 
+/* ---------- DRAW ---------- */
 function draw(){
 ctx.clearRect(0,0,320,450);
 
 if(state==="win"){
 ctx.fillStyle="#4a0015";
 ctx.textAlign="center";
-
 ctx.font="28px monospace";
 ctx.fillText("YOU WIN!",160,120);
 
 drawKirby(160,170,true);
+
+drawFireworks();
 
 ctx.font="24px monospace";
 ctx.fillText("Miriam,",160,250);
@@ -211,16 +230,12 @@ return;
 }
 
 hearts.forEach(h=>drawHeart(h.x,h.y));
-
 drawSparkles();
-
 drawKirby(player.px+8,player.py+8);
-
 ghosts.forEach(drawGhost);
 }
 
 /* ---------- UPDATE ---------- */
-
 function update(){
 if(state!=="play")return;
 
@@ -235,6 +250,16 @@ player.y=Math.floor(player.py/grid);
 
 if(player.dx||player.dy)spawnSparkle();
 
+// Kirby inhale attracts hearts
+if(inhale){
+hearts.forEach(h=>{
+let dx=player.x-h.x;
+let dy=player.y-h.y;
+if(Math.abs(dx)<5)h.x+=dx*0.2;
+if(Math.abs(dy)<5)h.y+=dy*0.2;
+});
+}
+
 ghosts.forEach(g=>{
 if(!g.tx||Math.random()<0.02){
 g.tx=Math.random()*300;
@@ -243,10 +268,7 @@ g.ty=Math.random()*430;
 const dx=g.tx-g.px;
 const dy=g.ty-g.py;
 const d=Math.hypot(dx,dy);
-if(d>1){
-g.px+=dx/d*1.5;
-g.py+=dy/d*1.5;
-}
+if(d>1){g.px+=dx/d*1.5;g.py+=dy/d*1.5;}
 });
 
 hearts=hearts.filter(h=>{
@@ -270,6 +292,7 @@ if(lives<=0)reset();
 
 if(score>=20){
 state="win";
+spawnFirework();
 clearInterval(loop);
 }
 
@@ -277,50 +300,42 @@ draw();
 }
 
 /* ---------- GAME CONTROL ---------- */
-
-function startGame(){
-startScreen.style.display="none";
-reset();
-}
-
+function startGame(){startScreen.style.display="none";reset();}
 function reset(){
 state="play";
-score=0;
-lives=3;
+score=0;lives=3;
 scoreEl.textContent=score;
 livesEl.textContent=lives;
 
 player={px:160,py:200,dx:0,dy:0};
-
 sparkles=[];
-
 hearts=[];
-for(let i=0;i<20;i++){
-hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-}
-
+for(let i=0;i<20;i++){hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});}
 ghosts=[
 {px:40,py:40,color:"#cc0000"},
 {px:200,py:60,color:"#00ffff"},
 {px:100,py:200,color:"#ff8000"},
 {px:250,py:300,color:"#ff007f"}
 ];
-
 clearInterval(loop);
 loop=setInterval(update,50);
 }
 
 /* ---------- CONTROLS ---------- */
-
 document.addEventListener("keydown",e=>{
 if(state!=="play")return;
 if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
 if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
 if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
 if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
+// Kirby inhale key
+if(e.key===" "){inhale=true;}
+});
+document.addEventListener("keyup",e=>{
+if(e.key===" "){inhale=false;}
 });
 
-/* joystick */
+/* ---------- JOYSTICK ---------- */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
@@ -332,27 +347,18 @@ if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
 else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
 else{player.dy=sy>0?1:-1;player.dx=0;}
 }
-
 joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
 joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
-joystick.addEventListener("touchend",()=>{
-moving=false;
-stick.style.transform="translate(-50%,-50%)";
-sx=sy=0;
-updateDir();
-});
-
+joystick.addEventListener("touchend",()=>{moving=false;stick.style.transform="translate(-50%,-50%)";sx=sy=0;updateDir();});
 function move(t){
 const r=joystick.getBoundingClientRect();
 const cx=r.left+r.width/2;
 const cy=r.top+r.height/2;
 sx=t.clientX-cx;
 sy=t.clientY-cy;
-
 const max=r.width/2-30;
 const a=Math.atan2(sy,sx);
 const d=Math.min(Math.hypot(sx,sy),max);
-
 stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
 updateDir();
 }
