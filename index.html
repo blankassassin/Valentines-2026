@@ -5,69 +5,69 @@
 <title>Miriam's PacMan Game</title>
 
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  touch-action:none;
-  background:#5c1a2b;
-  font-family:monospace;
-  text-align:center;
+html,body{
+margin:0;
+padding:0;
+overflow:hidden;
+touch-action:none;
+background:#5c1a2b;
+font-family:monospace;
+text-align:center;
 }
 
-#screen {
-  background:#ff9bb3;
-  border:12px solid #4a0015;
-  width:320px;
-  height:450px;
-  margin:20px auto;
-  padding:10px;
-  position:relative;
+#screen{
+background:#ff9bb3;
+border:12px solid #4a0015;
+width:320px;
+height:450px;
+margin:20px auto;
+padding:10px;
+position:relative;
 }
 
-canvas {
-  background:#ff9bb3;
-  display:block;
-  margin:auto;
+canvas{
+background:#ff9bb3;
+display:block;
+margin:auto;
 }
 
-#startScreen {
-  position:absolute;
-  inset:0;
-  background:#ff9bb3;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  z-index:10;
+#startScreen{
+position:absolute;
+inset:0;
+background:#ff9bb3;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:10;
 }
 
-button {
-  font-size:20px;
-  padding:10px 20px;
-  margin-top:20px;
-  background:#FF6F91;
-  border:2px solid #4a0015;
+button{
+font-size:20px;
+padding:10px 20px;
+margin-top:20px;
+background:#FF6F91;
+border:2px solid #4a0015;
 }
 
-#joystick {
-  margin:20px auto;
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  background:black;
-  position:relative;
+#joystick{
+margin:20px auto;
+width:120px;
+height:120px;
+border-radius:50%;
+background:black;
+position:relative;
 }
 
-#stick {
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:yellow;
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
+#stick{
+width:60px;
+height:60px;
+border-radius:50%;
+background:yellow;
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
 }
 </style>
 </head>
@@ -88,211 +88,215 @@ Hit START to play
 </div>
 <button onclick="startGame()">START</button>
 </div>
-
 </div>
 
 <div id="joystick"><div id="stick"></div></div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const livesEl = document.getElementById("lives");
-const startScreen = document.getElementById("startScreen");
+const canvas=game;
+const ctx=canvas.getContext("2d");
+const scoreEl=document.getElementById("score");
+const livesEl=document.getElementById("lives");
+const startScreen=document.getElementById("startScreen");
 
-const grid = 16;
+const grid=16;
 
-let player, hearts, ghosts, sparkles;
-let score, lives, beatFrame, mouthOpen, gameLoop;
-let gameState = "menu";
+let player,hearts,ghosts;
+let score,lives,mouthOpen,loop;
+let state="menu";
 
 function drawHeart(x,y){
-  const px=x*grid, py=y*grid;
-  ctx.fillStyle="#ff3333";
-  ctx.beginPath();
-  ctx.arc(px+8,py+6,4,Math.PI,0);
-  ctx.arc(px+12,py+6,4,Math.PI,0);
-  ctx.lineTo(px+10,py+14);
-  ctx.closePath();
-  ctx.fill();
+ctx.fillStyle="#ff3333";
+ctx.beginPath();
+ctx.arc(x*grid+8,y*grid+6,4,Math.PI,0);
+ctx.arc(x*grid+12,y*grid+6,4,Math.PI,0);
+ctx.lineTo(x*grid+10,y*grid+14);
+ctx.fill();
 }
 
 function drawGhost(g){
-  const x=g.px,y=g.py,w=14,h=14;
+const x=g.px,y=g.py,w=14,h=14;
+ctx.fillStyle=g.color;
+ctx.beginPath();
+ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
+ctx.lineTo(x+w,y+h-3);
+ctx.lineTo(x+w-3,y+h);
+ctx.lineTo(x+w-6,y+h-3);
+ctx.lineTo(x+w-9,y+h);
+ctx.lineTo(x+w-12,y+h-3);
+ctx.lineTo(x,y+h-3);
+ctx.closePath();
+ctx.fill();
 
-  ctx.fillStyle=g.color;
-  ctx.beginPath();
-  ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
-  ctx.lineTo(x+w,y+h-3);
-  ctx.lineTo(x+w-3,y+h);
-  ctx.lineTo(x+w-6,y+h-3);
-  ctx.lineTo(x+w-9,y+h);
-  ctx.lineTo(x+w-12,y+h-3);
-  ctx.lineTo(x,y+h-3);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle="white";
-  ctx.fillRect(x+3,y+6,2,3);
-  ctx.fillRect(x+8,y+6,2,3);
+ctx.fillStyle="white";
+ctx.fillRect(x+3,y+6,2,3);
+ctx.fillRect(x+8,y+6,2,3);
 }
 
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.clearRect(0,0,320,450);
 
-  if(gameState==="win"){
-    ctx.fillStyle="#4a0015";
-    ctx.textAlign="center";
-    ctx.font="28px monospace";
-    ctx.fillText("YOU WIN!",160,120);
-    ctx.font="24px monospace";
-    ctx.fillText("Miriam,",160,200);
-    ctx.fillText("Will You Be",160,240);
-    ctx.fillText("My Valentine? ♥",160,280);
-    return;
-  }
+if(state==="win"){
+ctx.fillStyle="#4a0015";
+ctx.textAlign="center";
+ctx.font="28px monospace";
+ctx.fillText("YOU WIN!",160,120);
+ctx.font="24px monospace";
+ctx.fillText("Miriam,",160,200);
+ctx.fillText("Will You Be",160,240);
+ctx.fillText("My Valentine? ♥",160,280);
+return;
+}
 
-  hearts.forEach(h=>drawHeart(h.x,h.y));
+hearts.forEach(h=>drawHeart(h.x,h.y));
 
-  const px=player.px+8, py=player.py+8;
-  let angle=0;
-  if(player.dx===1) angle=0;
-  else if(player.dx===-1) angle=Math.PI;
-  else if(player.dy===-1) angle=-Math.PI/2;
-  else if(player.dy===1) angle=Math.PI/2;
+const px=player.px+8,py=player.py+8;
+let angle=0;
+if(player.dx===1)angle=0;
+if(player.dx===-1)angle=Math.PI;
+if(player.dy===-1)angle=-Math.PI/2;
+if(player.dy===1)angle=Math.PI/2;
 
-  const mouth=mouthOpen?0.25*Math.PI:0;
-  ctx.fillStyle="yellow";
-  ctx.beginPath();
-  ctx.moveTo(px,py);
-  ctx.arc(px,py,7,angle+mouth,angle+2*Math.PI-mouth);
-  ctx.fill();
-  mouthOpen=!mouthOpen;
+const mouth=mouthOpen?0.25*Math.PI:0;
+ctx.fillStyle="yellow";
+ctx.beginPath();
+ctx.moveTo(px,py);
+ctx.arc(px,py,7,angle+mouth,angle+2*Math.PI-mouth);
+ctx.fill();
+mouthOpen=!mouthOpen;
 
-  ghosts.forEach(drawGhost);
-
-  beatFrame++;
+ghosts.forEach(drawGhost);
 }
 
 function update(){
-  if(gameState!=="play") return;
+if(state!=="play")return;
 
-  player.px+=player.dx*4;
-  player.py+=player.dy*4;
+player.px+=player.dx*4;
+player.py+=player.dy*4;
 
-  player.px=Math.max(0,Math.min(304,player.px));
-  player.py=Math.max(0,Math.min(434,player.py));
+player.px=Math.max(0,Math.min(304,player.px));
+player.py=Math.max(0,Math.min(434,player.py));
 
-  player.x=Math.floor(player.px/grid);
-  player.y=Math.floor(player.py/grid);
+player.x=Math.floor(player.px/grid);
+player.y=Math.floor(player.py/grid);
 
-  ghosts.forEach(g=>{
-    if(!g.target || Math.random()<0.02){
-      g.target={x:Math.random()*300,y:Math.random()*430};
-    }
-    const dx=g.target.x-g.px;
-    const dy=g.target.y-g.py;
-    const d=Math.hypot(dx,dy);
-    if(d>1){
-      g.px+=dx/d*1.5;
-      g.py+=dy/d*1.5;
-    }
-  });
+ghosts.forEach(g=>{
+if(!g.tx||Math.random()<0.02){
+g.tx=Math.random()*300;
+g.ty=Math.random()*430;
+}
+const dx=g.tx-g.px;
+const dy=g.ty-g.py;
+const d=Math.hypot(dx,dy);
+if(d>1){
+g.px+=dx/d*1.5;
+g.py+=dy/d*1.5;
+}
+});
 
-  hearts=hearts.filter(h=>{
-    if(h.x===player.x&&h.y===player.y){
-      score++;
-      scoreEl.textContent=score;
-      return false;
-    }
-    return true;
-  });
+hearts=hearts.filter(h=>{
+if(h.x===player.x&&h.y===player.y){
+score++;
+scoreEl.textContent=score;
+return false;
+}
+return true;
+});
 
-  ghosts.forEach(g=>{
-    if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
-      lives--;
-      livesEl.textContent=lives;
-      player.px=160; player.py=200;
-      if(lives<=0) reset();
-    }
-  });
+ghosts.forEach(g=>{
+if(Math.abs(g.px-player.px)<12&&Math.abs(g.py-player.py)<12){
+lives--;
+livesEl.textContent=lives;
+player.px=160;
+player.py=200;
+if(lives<=0)reset();
+}
+});
 
-  if(score>=15){
-    gameState="win";
-    clearInterval(gameLoop);
-  }
+if(score>=15){
+state="win";
+clearInterval(loop);
+}
 
-  draw();
+draw();
 }
 
 function startGame(){
-  startScreen.style.display="none";
-  reset();
+startScreen.style.display="none";
+reset();
 }
 
 function reset(){
-  gameState="play";
-  score=0; lives=3;
-  scoreEl.textContent=score;
-  livesEl.textContent=lives;
+state="play";
+score=0;
+lives=3;
+scoreEl.textContent=score;
+livesEl.textContent=lives;
 
-  player={px:160,py:200,dx:0,dy:0};
+player={px:160,py:200,dx:0,dy:0};
 
-  hearts=[];
-  for(let i=0;i<15;i++){
-    hearts.push({
-      x:Math.floor(Math.random()*20),
-      y:Math.floor(Math.random()*28)
-    });
-  }
-
-  ghosts=[
-    {px:40,py:40,color:"#ff4444"},
-    {px:200,py:60,color:"#00ffff"},
-    {px:100,py:200,color:"#ff8800"}
-  ];
-
-  beatFrame=0;
-  mouthOpen=true;
-
-  clearInterval(gameLoop);
-  gameLoop=setInterval(update,50);
+hearts=[];
+for(let i=0;i<15;i++){
+hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
 }
 
+ghosts=[
+{px:40,py:40,color:"#cc0000"},
+{px:200,py:60,color:"#00ffff"},
+{px:100,py:200,color:"#ff8000"},
+{px:250,py:300,color:"#ff007f"}
+];
+
+mouthOpen=true;
+
+clearInterval(loop);
+loop=setInterval(update,50);
+}
+
+/* Keyboard controls */
+document.addEventListener("keydown",e=>{
+if(state!=="play")return;
+if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
+if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
+if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
+if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
+});
+
+/* Joystick */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
-let sx=0, sy=0, moving=false;
+let sx=0,sy=0,moving=false;
 
 function updateDir(){
-  if(!player) return;
-  const ax=Math.abs(sx), ay=Math.abs(sy);
-  if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
-  else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
-  else{player.dy=sy>0?1:-1;player.dx=0;}
+if(!player)return;
+const ax=Math.abs(sx),ay=Math.abs(sy);
+if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
+else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
+else{player.dy=sy>0?1:-1;player.dx=0;}
 }
 
 joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
 joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
 joystick.addEventListener("touchend",()=>{
-  moving=false;
-  stick.style.transform="translate(-50%,-50%)";
-  sx=sy=0;
-  updateDir();
+moving=false;
+stick.style.transform="translate(-50%,-50%)";
+sx=sy=0;
+updateDir();
 });
 
 function move(t){
-  const r=joystick.getBoundingClientRect();
-  const cx=r.left+r.width/2;
-  const cy=r.top+r.height/2;
-  sx=t.clientX-cx;
-  sy=t.clientY-cy;
+const r=joystick.getBoundingClientRect();
+const cx=r.left+r.width/2;
+const cy=r.top+r.height/2;
+sx=t.clientX-cx;
+sy=t.clientY-cy;
 
-  const max=r.width/2-30;
-  const a=Math.atan2(sy,sx);
-  const d=Math.min(Math.hypot(sx,sy),max);
+const max=r.width/2-30;
+const a=Math.atan2(sy,sx);
+const d=Math.min(Math.hypot(sx,sy),max);
 
-  stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-  updateDir();
+stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
+updateDir();
 }
 </script>
 
