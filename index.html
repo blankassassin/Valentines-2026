@@ -99,6 +99,9 @@ button{
 
 <h3 style="margin:5px 0;">Miriam's Game</h3>
 
+<!-- Audio element for win music -->
+<audio id="winMusic" src="song.mp3" preload="auto"></audio>
+
 <div id="screen">
 Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 <canvas id="game" width="320" height="450"></canvas>
@@ -124,6 +127,7 @@ const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
+const winMusic = document.getElementById("winMusic");
 
 const grid = 16;
 const WIN_SCORE = 2; 
@@ -401,14 +405,25 @@ function update(){
   if(score >= WIN_SCORE){
       state = "win";
       clearInterval(loop);
+
+      // Play win music
+      winMusic.currentTime = 0;
+      winMusic.play();
+
       requestAnimationFrame(draw);
   }
 
   draw();
 }
 
+/* ---------- START GAME ---------- */
 function startGame(){
     startScreen.style.display="none";
+
+    // Stop win music if playing
+    winMusic.pause();
+    winMusic.currentTime = 0;
+
     reset();
 }
 
@@ -435,6 +450,7 @@ function reset(){
     loop=setInterval(update,50);
 }
 
+/* ---------- KEYBOARD CONTROLS ---------- */
 document.addEventListener("keydown",e=>{
     if(state!=="play") return;
     if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
@@ -443,7 +459,7 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 
-/* ---------- SMOOTH MOBILE JOYSTICK ---------- */
+/* ---------- MOBILE JOYSTICK ---------- */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
@@ -470,12 +486,12 @@ function move(t){
 }
 
 joystick.addEventListener("touchstart",e=>{
-    e.preventDefault(); // Prevent scroll
+    e.preventDefault();
     moving=true;
     move(e.touches[0]);
 });
 joystick.addEventListener("touchmove",e=>{
-    e.preventDefault(); // Prevent scroll
+    e.preventDefault();
     if(moving) move(e.touches[0]);
 });
 joystick.addEventListener("touchend",()=>{
