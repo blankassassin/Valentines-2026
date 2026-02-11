@@ -103,7 +103,7 @@ const livesEl=document.getElementById("lives");
 const startScreen=document.getElementById("startScreen");
 
 const grid=16;
-let player,hearts,ghosts,sparkles=[],fireworks=[];
+let player,hearts,ghosts,sparkles=[],fireworks=[]; 
 let score,lives,loop,state="menu";
 
 /* ---------- HEARTS ---------- */
@@ -136,9 +136,9 @@ ctx.fillRect(x+8,y+6,2,3);
 }
 
 /* ---------- KIRBY PLAYER ---------- */
-function drawKirby(px,py,celebrate=false){
+function drawKirby(px,py,celebrate=false,sizeOverride){
 let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
-let size=8;
+let size=sizeOverride || 8;
 
 // body
 ctx.fillStyle="#ff9bd4";
@@ -214,15 +214,26 @@ function draw(){
 ctx.clearRect(0,0,320,450);
 
 if(state==="win"){
-ctx.fillStyle="#4a0015";
+// Gradient sparkling "YOU WIN!"
+let gradient = ctx.createLinearGradient(0, 100, 320, 100);
+gradient.addColorStop(0, 'yellow');
+gradient.addColorStop(0.3, 'orange');
+gradient.addColorStop(0.6, 'pink');
+gradient.addColorStop(1, 'red');
+
+ctx.fillStyle = gradient;
 ctx.textAlign="center";
-ctx.font="28px monospace";
+ctx.font="32px monospace";
 ctx.fillText("YOU WIN!",160,120);
 
-drawKirby(160,170,true);
+// Kirby bigger
+drawKirby(160,170,true,12);
 
+// Fireworks
 drawFireworks();
 
+// Valentine text in dark red
+ctx.fillStyle="#8B0000";
 ctx.font="24px monospace";
 ctx.fillText("Miriam,",160,250);
 ctx.fillText("Will You Be",160,285);
