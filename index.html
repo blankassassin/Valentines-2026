@@ -104,7 +104,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 2; // hearts needed to win
+const WIN_SCORE = 20; // hearts needed to win
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -192,11 +192,10 @@ function drawSparkles(){
 
 /* ---------- STARS ---------- */
 function drawStars(){
-  if(!stars) return;
   stars.forEach(s=>{
     ctx.fillStyle="yellow";
     ctx.beginPath();
-    ctx.moveTo(s.x*grid+8, s.y*grid); // top
+    ctx.moveTo(s.x*grid+8, s.y*grid);
     ctx.lineTo(s.x*grid+10, s.y*grid+6);
     ctx.lineTo(s.x*grid+16, s.y*grid+6);
     ctx.lineTo(s.x*grid+11, s.y*grid+10);
@@ -225,11 +224,11 @@ function draw(){
     ctx.fillStyle = winTextColorToggle ? "black":"white";
     ctx.textAlign="center";
     ctx.font="32px monospace";
-    ctx.fillText("YOU WIN!",160,60); // closer to score board
+    ctx.fillText("YOU WIN!",160,60);
 
-    // draw image
+    // draw win image
     if(winImage.complete){
-        let size = 150; // square image
+        let size = 150; // square
         ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
     }
 
@@ -253,7 +252,6 @@ function draw(){
     return;
   }
 
-  // game loop
   hearts.forEach(h=>drawHeart(h.x,h.y));
   drawStars();
   drawSparkles();
@@ -280,7 +278,6 @@ function gameOver(){
 function update(){
   if(state!=="play") return;
 
-  // determine speed
   let speed = 4;
   if(playerSpeedBoost && Date.now() - playerSpeedBoostTime < 5000){
       speed = 8;
@@ -308,7 +305,6 @@ function update(){
       if(d>1){g.px+=dx/d*1.5; g.py+=dy/d*1.5;}
   });
 
-  // collect hearts
   hearts = hearts.filter(h=>{
       if(h.x===player.x && h.y===player.y){
           score++;
@@ -318,7 +314,6 @@ function update(){
       return true;
   });
 
-  // collect stars
   stars = stars.filter(s=>{
       if(s.x===player.x && s.y===player.y){
           playerSpeedBoost = true;
@@ -328,7 +323,6 @@ function update(){
       return true;
   });
 
-  // collisions with ghosts
   ghosts.forEach(g=>{
       if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
           lives--;
@@ -342,6 +336,7 @@ function update(){
   if(score >= WIN_SCORE){
       state = "win";
       clearInterval(loop);
+      requestAnimationFrame(draw); // keep draw running for flashing text
   }
 
   draw();
@@ -420,12 +415,11 @@ function move(t){
 /* ---------- CLICK RESTART BUTTON ---------- */
 canvas.addEventListener("click", function(e){
     if(state==="win"){
-        // check if click inside restart button
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         if(x>=90 && x<=230 && y>=370 && y<=410){
-            location.reload(); // refresh page to restart
+            location.reload(); // refresh to restart
         }
     }
 });
