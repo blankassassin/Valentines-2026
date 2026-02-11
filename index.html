@@ -104,7 +104,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 20 // hearts needed to win
+const WIN_SCORE = 2 // hearts needed to win
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -361,10 +361,11 @@ function reset(){
     for(let i=0;i<WIN_SCORE;i++){
         hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
-    // spawn 2 yellow stars
+    // spawn 3 yellow stars
     stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-
+    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+ 
     ghosts=[
         {px:40,py:40,color:"#cc0000"},
         {px:200,py:60,color:"#00ffff"},
