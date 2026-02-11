@@ -213,7 +213,7 @@ if(lives<=0)reset();
 }
 });
 
-if(score>=15){
+if(score>=20){
 state="win";
 clearInterval(loop);
 }
@@ -236,7 +236,7 @@ livesEl.textContent=lives;
 player={px:160,py:200,dx:0,dy:0};
 
 hearts=[];
-for(let i=0;i<15;i++){
+for(let i=0;i<20;i++){
 hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
 }
 
