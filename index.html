@@ -20,6 +20,16 @@ html,body{
   background:#5c1a2b;
   font-family:monospace;
   text-align:center;
+
+  /* Prevent text selection on mobile/desktop */
+  user-select: none;
+  -webkit-user-select: none;  
+  -moz-user-select: none;     
+  -ms-user-select: none;      
+
+  /* Remove mobile tap highlight */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; /* Disable long press on iOS */
 }
 
 #screen{
@@ -56,6 +66,9 @@ button{
   background:#FF6F91;
   border:2px solid #4a0015;
   cursor:pointer;
+
+  /* Prevent highlight on tap */
+  -webkit-tap-highlight-color: transparent;
 }
 
 #joystick{
@@ -65,6 +78,7 @@ button{
   border-radius:50%;
   background:black;
   position:relative;
+  touch-action: none; /* Prevent scrolling during touch */
 }
 
 #stick{
@@ -76,6 +90,7 @@ button{
   left:50%;
   top:50%;
   transform:translate(-50%,-50%);
+  pointer-events: none; /* Prevent accidental drag/highlight */
 }
 </style>
 </head>
@@ -90,7 +105,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hiii baby,<br>
+    Hiiiiiii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side shawty!<br>
@@ -285,13 +300,13 @@ function draw(){
 
     // Restart button
     ctx.fillStyle="#FF6F91";
-    ctx.fillRect(90,380,140,40);
+    ctx.fillRect(90,390,140,40);
     ctx.strokeStyle="#4a0015";
     ctx.lineWidth=2;
-    ctx.strokeRect(90,380,140,40);
+    ctx.strokeRect(90,390,140,40);
     ctx.fillStyle="black";
     ctx.font="20px monospace";
-    ctx.fillText("Restart",160,408);
+    ctx.fillText("Restart",160,418);
 
     return;
   }
@@ -428,6 +443,7 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 
+/* ---------- SMOOTH MOBILE JOYSTICK ---------- */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
@@ -439,9 +455,7 @@ function updateDir(){
     else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
     else{player.dy=sy>0?1:-1;player.dx=0;}
 }
-joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
-joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
-joystick.addEventListener("touchend",()=>{moving=false;stick.style.transform="translate(-50%,-50%)";sx=sy=0;updateDir();});
+
 function move(t){
     const r=joystick.getBoundingClientRect();
     const cx=r.left+r.width/2;
@@ -455,6 +469,23 @@ function move(t){
     updateDir();
 }
 
+joystick.addEventListener("touchstart",e=>{
+    e.preventDefault(); // Prevent scroll
+    moving=true;
+    move(e.touches[0]);
+});
+joystick.addEventListener("touchmove",e=>{
+    e.preventDefault(); // Prevent scroll
+    if(moving) move(e.touches[0]);
+});
+joystick.addEventListener("touchend",()=>{
+    moving=false;
+    stick.style.transform="translate(-50%,-50%)";
+    sx=sy=0;
+    updateDir();
+});
+
+/* ---------- RESTART BUTTON CLICK ---------- */
 canvas.addEventListener("click", function(e){
     if(state==="win"){
         const rect = canvas.getBoundingClientRect();
