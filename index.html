@@ -111,8 +111,6 @@ let score, lives, loop, state="menu";
 let playerSpeedBoost = false, playerSpeedBoostTime = 0;
 let winImage = new Image();
 winImage.src = "jandm.png";
-let winTextColorToggle = false;
-let lastToggle = Date.now();
 
 /* ---------- HEARTS ---------- */
 function drawHeart(x,y){
@@ -215,30 +213,22 @@ function draw(){
   ctx.clearRect(0,0,320,450);
 
   if(state==="win"){
-    // toggle color for YOU WIN!
-    if(Date.now() - lastToggle > 500){
-        winTextColorToggle = !winTextColorToggle;
-        lastToggle = Date.now();
-    }
-    ctx.fillStyle = winTextColorToggle ? "black":"white";
+    ctx.fillStyle = "black";
     ctx.textAlign="center";
     ctx.font="32px monospace";
     ctx.fillText("YOU WIN!",160,60);
 
-    // win image
     if(winImage.complete){
         let size = 150;
         ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
     }
 
-    // overlay text
     ctx.fillStyle="#8B0000";
     ctx.font="24px monospace";
     ctx.fillText("Miriam,",160,280);
     ctx.fillText("Will You Be",160,310);
     ctx.fillText("My Valentine? ♥",160,340);
 
-    // restart button
     ctx.fillStyle="#FF6F91";
     ctx.fillRect(90,370,140,40);
     ctx.strokeStyle="#4a0015";
@@ -293,15 +283,21 @@ function update(){
 
   if(player.dx||player.dy) spawnSparkle();
 
-  ghosts.forEach(g=>{
-      if(!g.tx||Math.random()<0.02){
-          g.tx=Math.random()*300;
-          g.ty=Math.random()*430;
+  // Smooth ghost movement
+  ghosts.forEach(g => {
+      const dx = g.tx - g.px;
+      const dy = g.ty - g.py;
+      const d = Math.hypot(dx, dy);
+
+      if(!g.tx || d < 2){
+          g.tx = Math.random() * 300;
+          g.ty = Math.random() * 430;
       }
-      const dx=g.tx-g.px;
-      const dy=g.ty-g.py;
-      const d=Math.hypot(dx,dy);
-      if(d>1){g.px+=dx/d*1.5; g.py+=dy/d*1.5;}
+
+      if(d > 0){
+          g.px += dx/d * 1.5;
+          g.py += dy/d * 1.5;
+      }
   });
 
   hearts = hearts.filter(h=>{
@@ -360,12 +356,10 @@ function reset(){
     for(let i=0;i<WIN_SCORE;i++){
         hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
+    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
 
-    // spawn 3 yellow stars
-    for(let i=0;i<3;i++){
-        stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    }
- 
     ghosts=[
         {px:40,py:40,color:"#cc0000"},
         {px:200,py:60,color:"#00ffff"},
@@ -420,7 +414,7 @@ canvas.addEventListener("click", function(e){
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         if(x>=90 && x<=230 && y>=370 && y<=410){
-            reset(); // restart without reloading
+            location.reload();
         }
     }
 });
