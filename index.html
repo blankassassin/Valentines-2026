@@ -101,9 +101,10 @@ const startScreen=document.getElementById("startScreen");
 
 const grid=16;
 
-let player,hearts,ghosts;
-let score,lives,mouthOpen,loop;
-let state="menu";
+let player,hearts,ghosts,sparkles=[];
+let score,lives,loop,state="menu";
+
+/* ---------- HEARTS ---------- */
 
 function drawHeart(x,y){
 ctx.fillStyle="#ff3333";
@@ -114,8 +115,11 @@ ctx.lineTo(x*grid+10,y*grid+14);
 ctx.fill();
 }
 
+/* ---------- GHOSTS ---------- */
+
 function drawGhost(g){
 const x=g.px,y=g.py,w=14,h=14;
+
 ctx.fillStyle=g.color;
 ctx.beginPath();
 ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
@@ -133,40 +137,89 @@ ctx.fillRect(x+3,y+6,2,3);
 ctx.fillRect(x+8,y+6,2,3);
 }
 
+/* ---------- KIRBY PLAYER ---------- */
+
+function drawKirby(px,py,celebrate=false){
+
+let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
+
+// body
+ctx.fillStyle="#ff9bd4";
+ctx.beginPath();
+ctx.arc(px,py+bounce,8,0,Math.PI*2);
+ctx.fill();
+
+// eyes
+ctx.fillStyle="#000";
+ctx.fillRect(px-3,py-2+bounce,2,4);
+ctx.fillRect(px+1,py-2+bounce,2,4);
+
+// blush
+ctx.fillStyle="#ff6fa5";
+ctx.fillRect(px-6,py+2+bounce,2,1);
+ctx.fillRect(px+4,py+2+bounce,2,1);
+
+// feet
+ctx.fillStyle="#d94f8a";
+ctx.beginPath();
+ctx.ellipse(px-3,py+7+bounce,3,2,0,0,Math.PI*2);
+ctx.ellipse(px+3,py+7+bounce,3,2,0,0,Math.PI*2);
+ctx.fill();
+}
+
+/* ---------- SPARKLES ---------- */
+
+function spawnSparkle(){
+sparkles.push({
+x:player.px+8,
+y:player.py+8,
+size:2+Math.random()*2,
+life:20
+});
+}
+
+function drawSparkles(){
+sparkles.forEach(s=>{
+ctx.fillStyle="white";
+ctx.fillRect(s.x,s.y,s.size,s.size);
+s.y-=0.5;
+s.life--;
+});
+sparkles=sparkles.filter(s=>s.life>0);
+}
+
+/* ---------- DRAW ---------- */
+
 function draw(){
 ctx.clearRect(0,0,320,450);
 
 if(state==="win"){
 ctx.fillStyle="#4a0015";
 ctx.textAlign="center";
+
 ctx.font="28px monospace";
 ctx.fillText("YOU WIN!",160,120);
+
+drawKirby(160,170,true);
+
 ctx.font="24px monospace";
-ctx.fillText("Miriam,",160,200);
-ctx.fillText("Will You Be",160,240);
-ctx.fillText("My Valentine? ♥",160,280);
+ctx.fillText("Miriam,",160,250);
+ctx.fillText("Will You Be",160,285);
+ctx.fillText("My Valentine? ♥",160,320);
+
 return;
 }
 
 hearts.forEach(h=>drawHeart(h.x,h.y));
 
-const px=player.px+8,py=player.py+8;
-let angle=0;
-if(player.dx===1)angle=0;
-if(player.dx===-1)angle=Math.PI;
-if(player.dy===-1)angle=-Math.PI/2;
-if(player.dy===1)angle=Math.PI/2;
+drawSparkles();
 
-const mouth=mouthOpen?0.25*Math.PI:0;
-ctx.fillStyle="yellow";
-ctx.beginPath();
-ctx.moveTo(px,py);
-ctx.arc(px,py,7,angle+mouth,angle+2*Math.PI-mouth);
-ctx.fill();
-mouthOpen=!mouthOpen;
+drawKirby(player.px+8,player.py+8);
 
 ghosts.forEach(drawGhost);
 }
+
+/* ---------- UPDATE ---------- */
 
 function update(){
 if(state!=="play")return;
@@ -179,6 +232,8 @@ player.py=Math.max(0,Math.min(434,player.py));
 
 player.x=Math.floor(player.px/grid);
 player.y=Math.floor(player.py/grid);
+
+if(player.dx||player.dy)spawnSparkle();
 
 ghosts.forEach(g=>{
 if(!g.tx||Math.random()<0.02){
@@ -221,6 +276,8 @@ clearInterval(loop);
 draw();
 }
 
+/* ---------- GAME CONTROL ---------- */
+
 function startGame(){
 startScreen.style.display="none";
 reset();
@@ -235,6 +292,8 @@ livesEl.textContent=lives;
 
 player={px:160,py:200,dx:0,dy:0};
 
+sparkles=[];
+
 hearts=[];
 for(let i=0;i<20;i++){
 hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
@@ -247,13 +306,12 @@ ghosts=[
 {px:250,py:300,color:"#ff007f"}
 ];
 
-mouthOpen=true;
-
 clearInterval(loop);
 loop=setInterval(update,50);
 }
 
-/* Keyboard controls */
+/* ---------- CONTROLS ---------- */
+
 document.addEventListener("keydown",e=>{
 if(state!=="play")return;
 if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
@@ -262,7 +320,7 @@ if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
 if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
 });
 
-/* Joystick */
+/* joystick */
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
