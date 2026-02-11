@@ -21,15 +21,13 @@ html,body{
   font-family:monospace;
   text-align:center;
 
-  /* Prevent text selection on mobile/desktop */
   user-select: none;
   -webkit-user-select: none;  
   -moz-user-select: none;     
   -ms-user-select: none;      
 
-  /* Remove mobile tap highlight */
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none; /* Disable long press on iOS */
+  -webkit-touch-callout: none;
 }
 
 #screen{
@@ -66,8 +64,6 @@ button{
   background:#FF6F91;
   border:2px solid #4a0015;
   cursor:pointer;
-
-  /* Prevent highlight on tap */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -78,7 +74,7 @@ button{
   border-radius:50%;
   background:black;
   position:relative;
-  touch-action: none; /* Prevent scrolling during touch */
+  touch-action: none;
 }
 
 #stick{
@@ -90,7 +86,7 @@ button{
   left:50%;
   top:50%;
   transform:translate(-50%,-50%);
-  pointer-events: none; /* Prevent accidental drag/highlight */
+  pointer-events: none;
 }
 </style>
 </head>
@@ -108,7 +104,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hiii baby,<br>
+    Hii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side shawty!<br>
@@ -130,7 +126,7 @@ const startScreen = document.getElementById("startScreen");
 const winMusic = document.getElementById("winMusic");
 
 const grid = 16;
-const WIN_SCORE = 2; 
+const WIN_SCORE = 35; 
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -283,26 +279,22 @@ function draw(){
     ctx.font="32px monospace";
     ctx.fillText("YOU WIN!",160,60);
 
-    // ✨ Text above image
     ctx.font="15px monospace";
     ctx.fillStyle="black";
     ctx.fillText("All Hearts Caught!",160,100);
     ctx.fillText("Now Catch Me Feb 14 ♥",160,125);
 
-    // Draw image
     if(winImage.complete){
         let size = 150;
         ctx.drawImage(winImage,(canvas.width-size)/2,150,size,size);
     }
 
-    // Valentine message below image
     ctx.fillStyle="#8B0000";
     ctx.font="24px monospace";
     ctx.fillText("Miriam,",160,320);
     ctx.fillText("Will You Be",160,350);
     ctx.fillText("My Valentine? ♥",160,380);
 
-    // Restart button
     ctx.fillStyle="#FF6F91";
     ctx.fillRect(90,390,140,40);
     ctx.strokeStyle="#4a0015";
@@ -406,9 +398,10 @@ function update(){
       state = "win";
       clearInterval(loop);
 
-      // Play win music
+      // Play win music reliably after user interaction
+      winMusic.loop = true;
       winMusic.currentTime = 0;
-      winMusic.play();
+      winMusic.play().catch(()=>{});
 
       requestAnimationFrame(draw);
   }
@@ -420,9 +413,10 @@ function update(){
 function startGame(){
     startScreen.style.display="none";
 
-    // Stop win music if playing
+    // Unlock audio on mobile
     winMusic.pause();
     winMusic.currentTime = 0;
+    winMusic.play().catch(()=>{});
 
     reset();
 }
