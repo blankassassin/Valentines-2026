@@ -213,39 +213,41 @@ fireworks=fireworks.filter(f=>f.life>0);
 function draw(){
 ctx.clearRect(0,0,320,450);
 
+// Win screen
 if(state==="win"){
-// Gradient sparkling "YOU WIN!"
-let gradient = ctx.createLinearGradient(0, 100, 320, 100);
-gradient.addColorStop(0, 'yellow');
-gradient.addColorStop(0.3, 'orange');
-gradient.addColorStop(0.6, 'pink');
-gradient.addColorStop(1, 'red');
-
-ctx.fillStyle = gradient;
+ctx.fillStyle = "black";
 ctx.textAlign="center";
 ctx.font="32px monospace";
 ctx.fillText("YOU WIN!",160,120);
 
-// Kirby bigger
 drawKirby(160,170,true,12);
-
-// Fireworks
 drawFireworks();
 
-// Valentine text in dark red
 ctx.fillStyle="#8B0000";
 ctx.font="24px monospace";
 ctx.fillText("Miriam,",160,250);
 ctx.fillText("Will You Be",160,285);
 ctx.fillText("My Valentine? ♥",160,320);
-
 return;
 }
 
+// Game loop
 hearts.forEach(h=>drawHeart(h.x,h.y));
 drawSparkles();
 drawKirby(player.px+8,player.py+8);
 ghosts.forEach(drawGhost);
+}
+
+/* ---------- GAME OVER ---------- */
+function gameOver(){
+clearInterval(loop); // stop the game loop
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#4a0015"; // dark red
+ctx.font="18px monospace";
+ctx.textAlign="center";
+ctx.fillText("I believe in your skills so, I doubt you'll see this", canvas.width/2, canvas.height/2 - 20);
+ctx.fillText("Anyway, just incase you do see this:", canvas.width/2, canvas.height/2 + 10);
+ctx.fillText("Try Again!", canvas.width/2, canvas.height/2 + 40);
 }
 
 /* ---------- UPDATE ---------- */
@@ -284,12 +286,15 @@ return true;
 });
 
 ghosts.forEach(g=>{
-if(Math.abs(g.px-player.px)<12&&Math.abs(g.py-player.py)<12){
+if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
 lives--;
 livesEl.textContent=lives;
 player.px=160;
 player.py=200;
-if(lives<=0)reset();
+if(lives <= 0){
+    gameOver(); // custom game over screen
+    return;
+}
 }
 });
 
