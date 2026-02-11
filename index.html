@@ -104,13 +104,13 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 20; // hearts needed to win
+const WIN_SCORE = 2; // hearts needed to win
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
 let playerSpeedBoost = false, playerSpeedBoostTime = 0;
 let winImage = new Image();
-winImage.src = "jandm.jpg";
+winImage.src = "jandm.png";
 let winTextColorToggle = false;
 let lastToggle = Date.now();
 
@@ -282,7 +282,7 @@ function update(){
 
   // determine speed
   let speed = 4;
-  if(playerSpeedBoost && Date.now() - playerSpeedBoostTime < 3000){
+  if(playerSpeedBoost && Date.now() - playerSpeedBoostTime < 5000){
       speed = 8;
   } else { playerSpeedBoost = false; }
 
