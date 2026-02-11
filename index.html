@@ -70,6 +70,43 @@ button{
   top:50%;
   transform:translate(-50%,-50%);
 }
+
+/* WIN OVERLAYS */
+#winOverlay{
+  display:none;
+  position:absolute;
+  inset:0;
+  background:rgba(255,155,179,0.9);
+  z-index:15;
+  text-align:center;
+}
+#winOverlayText{
+  position:absolute;
+  bottom:50px;
+  width:100%;
+  text-align:center;
+  color:#8B0000;
+  font-family:monospace;
+  font-size:24px;
+}
+#winOverlay button{
+  position:absolute;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:20px;
+  padding:10px 20px;
+  background:#FF6F91;
+  border:2px solid #4a0015;
+  cursor:pointer;
+}
+#winColorOverlay{
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:16;
+  pointer-events:none; /* clicks pass through */
+}
 </style>
 </head>
 
@@ -96,8 +133,24 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="joystick"><div id="stick"></div></div>
 
+<!-- WIN OVERLAY -->
+<div id="winOverlay">
+  <canvas id="winCanvas" width="320" height="450" style="display:block; margin:auto;"></canvas>
+  <div id="winOverlayText">
+    Miriam,<br>
+    Will You Be<br>
+    My Valentine? ♥
+  </div>
+  <button id="restartBtn">Restart</button>
+</div>
+
+<!-- WIN COLOR OVERLAY -->
+<div id="winColorOverlay">
+  <canvas id="winColorCanvas" width="320" height="450" style="display:block; margin:auto;"></canvas>
+</div>
+
 <script>
-const canvas = game;
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
@@ -111,6 +164,12 @@ let score, lives, loop, state="menu";
 let playerSpeedBoost = false, playerSpeedBoostTime = 0;
 let winImage = new Image();
 winImage.src = "jandm.png";
+
+// WIN COLOR OVERLAY
+const winColorOverlay = document.getElementById("winColorOverlay");
+const winColorCanvas = document.getElementById("winColorCanvas");
+const winColorCtx = winColorCanvas.getContext("2d");
+let fireworks = [];
 let winTextColorToggle = false;
 let lastToggle = Date.now();
 
@@ -210,46 +269,54 @@ function drawStars(){
   });
 }
 
-/* ---------- DRAW ---------- */
-function draw(){
-  ctx.clearRect(0,0,320,450);
+/* ---------- FIREWORKS & FLASHING TEXT ---------- */
+function spawnFirework() {
+    for (let i = 0; i < 5; i++) {
+        fireworks.push({
+            x:160,
+            y:170,
+            vx:(Math.random()-0.5)*4,
+            vy:(Math.random()-1.5)*4,
+            size:2+Math.random()*2,
+            life:30+Math.random()*20,
+            color:`hsl(${Math.random()*360},100%,70%)`
+        });
+    }
+}
+function drawWinColorOverlay(){
+    winColorCtx.clearRect(0,0,320,450);
 
-  // Win screen
-  if(state==="win"){
-    // toggle color for YOU WIN! twice per second
     if(Date.now() - lastToggle > 500){
         winTextColorToggle = !winTextColorToggle;
         lastToggle = Date.now();
     }
-    ctx.fillStyle = winTextColorToggle ? "black":"white";
-    ctx.textAlign="center";
-    ctx.font="32px monospace";
-    ctx.fillText("YOU WIN!",160,60);
 
-    // draw win image
-    if(winImage.complete){
-        let size = 150; // square
-        ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
-    }
+    // Flashing YOU WIN!
+    winColorCtx.fillStyle = winTextColorToggle ? "black":"white";
+    winColorCtx.font="32px monospace";
+    winColorCtx.textAlign="center";
+    winColorCtx.fillText("YOU WIN!", 160, 60);
 
-    // overlay text
-    ctx.fillStyle="#8B0000";
-    ctx.font="24px monospace";
-    ctx.fillText("Miriam,",160,280);
-    ctx.fillText("Will You Be",160,310);
-    ctx.fillText("My Valentine? ♥",160,340);
+    // Fireworks
+    fireworks.forEach(f=>{
+        winColorCtx.fillStyle=f.color;
+        winColorCtx.fillRect(f.x,f.y,f.size,f.size);
+        f.x += f.vx;
+        f.y += f.vy;
+        f.vy += 0.05;
+        f.life--;
+    });
+    fireworks = fireworks.filter(f=>f.life>0);
 
-    // restart button
-    ctx.fillStyle="#FF6F91";
-    ctx.fillRect(90,370,140,40);
-    ctx.strokeStyle="#4a0015";
-    ctx.lineWidth=2;
-    ctx.strokeRect(90,370,140,40);
-    ctx.fillStyle="black";
-    ctx.font="20px monospace";
-    ctx.fillText("Restart",160,398);
+    requestAnimationFrame(drawWinColorOverlay);
+}
 
-    return;
+/* ---------- DRAW ---------- */
+function draw(){
+  ctx.clearRect(0,0,320,450);
+
+  if(state==="win"){
+    return; // main game canvas stops drawing during win
   }
 
   hearts.forEach(h=>drawHeart(h.x,h.y));
@@ -336,7 +403,9 @@ function update(){
   if(score >= WIN_SCORE){
       state = "win";
       clearInterval(loop);
-      requestAnimationFrame(draw); // keep draw running for flashing text
+      document.getElementById("winOverlay").style.display = "block";
+      winColorOverlay.style.display = "block";
+      drawWinColorOverlay();
   }
 
   draw();
@@ -361,7 +430,6 @@ function reset(){
     for(let i=0;i<WIN_SCORE;i++){
         hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
-    // spawn 2 yellow stars
     stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
 
@@ -388,7 +456,6 @@ document.addEventListener("keydown",e=>{
 const joystick=document.getElementById("joystick");
 const stick=document.getElementById("stick");
 let sx=0,sy=0,moving=false;
-
 function updateDir(){
     if(!player)return;
     const ax=Math.abs(sx),ay=Math.abs(sy);
@@ -413,17 +480,7 @@ function move(t){
 }
 
 /* ---------- CLICK RESTART BUTTON ---------- */
-canvas.addEventListener("click", function(e){
-    if(state==="win"){
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        if(x>=90 && x<=230 && y>=370 && y<=410){
-            location.reload(); // refresh to restart
-        }
-    }
-});
+document.getElementById("restartBtn").addEventListener("click", ()=>location.reload());
 </script>
-
 </body>
 </html>
