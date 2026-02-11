@@ -94,7 +94,7 @@ button{
 <body>
 
 <h3 style="margin:5px 0;">Miriam's Game</h3>
-<h3 style="margin:5px 0;">pssst.. the stars give you a little boost</h3>
+<h3 style="margin:5px 0;">pssst.. the stars give you a lil boost</h3>
 
 <!-- Audio elements -->
 <audio id="bgMusic" src="kirbysong.mp3" preload="auto"></audio>
@@ -138,6 +138,16 @@ let winImage = new Image();
 winImage.src = "jandm.png";
 let winTextColorToggle = false;
 let lastToggle = Date.now();
+
+/* ---------- MOBILE AUDIO HELPER ---------- */
+function playAudio(audio){
+    audio.currentTime = 0;
+    audio.play().catch(()=>{
+        // Try resuming AudioContext if blocked
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        context.resume().then(()=>audio.play());
+    });
+}
 
 /* ---------- HELPER: UNIQUE POSITIONS ---------- */
 function generateUniquePositions(count, maxX, maxY){
@@ -410,10 +420,9 @@ function update(){
       bgMusic.pause();
       bgMusic.currentTime = 0;
 
-      // Play win music
+      // Play win music safely on mobile
       winMusic.loop = true;
-      winMusic.currentTime = 0;
-      winMusic.play().catch(()=>{});
+      playAudio(winMusic);
 
       requestAnimationFrame(draw);
   }
@@ -425,10 +434,9 @@ function update(){
 function startGame(){
     startScreen.style.display="none";
 
-    // Play gameplay music
+    // Play gameplay music safely
     bgMusic.loop = true;
-    bgMusic.currentTime = 0;
-    bgMusic.play().catch(()=>{});
+    playAudio(bgMusic);
 
     reset();
 }
