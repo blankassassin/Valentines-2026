@@ -6,111 +6,94 @@
 
 <style>
 html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  touch-action: none;
-  -webkit-user-select: none;
-}
-
-body {
-  background: #5c1a2b;
-  font-family: monospace;
-  text-align: center;
-  color: #4a0015;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  touch-action:none;
+  background:#5c1a2b;
+  font-family:monospace;
+  text-align:center;
 }
 
 #screen {
-  background: #ff9bb3;
-  border: 12px solid #4a0015;
-  width: 320px;
-  height: 450px;
-  margin: 20px auto;
-  padding: 10px;
-  position: relative;
-  overflow: hidden;
+  background:#ff9bb3;
+  border:12px solid #4a0015;
+  width:320px;
+  height:450px;
+  margin:20px auto;
+  padding:10px;
+  position:relative;
 }
 
 canvas {
-  background: #ff9bb3;
-  display: block;
-  margin: auto;
+  background:#ff9bb3;
+  display:block;
+  margin:auto;
 }
 
-#startScreen, #endScreen {
-  position: absolute;
-  top:0; left:0;
-  width: 100%; height: 100%;
-  background: #ff9bb3;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color:#4a0015;
-  z-index: 10;
+#startScreen {
+  position:absolute;
+  inset:0;
+  background:#ff9bb3;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:10;
 }
 
-#startScreen button {
-  font-size: 20px;
-  padding: 10px 20px;
-  margin-top: 20px;
-  background: #FF6F91;
-  border: 2px solid #4a0015;
-  color: #4a0015;
-  border-radius: 4px;
+button {
+  font-size:20px;
+  padding:10px 20px;
+  margin-top:20px;
+  background:#FF6F91;
+  border:2px solid #4a0015;
 }
 
-/* joystick BELOW game */
 #joystick {
-  margin: 20px auto;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: black;
-  position: relative;
+  margin:20px auto;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  background:black;
+  position:relative;
 }
 
 #stick {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: yellow;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:yellow;
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
 }
 </style>
 </head>
 
 <body>
 
-<h2 style="font-size:16px;color:black;">Miriam's PacMan</h2>
+<h3>Miriam's PacMan</h3>
 
 <div id="screen">
-
-<div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
-
+Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 <canvas id="game" width="320" height="450"></canvas>
 
 <div id="startScreen">
+<div>
 Hi baby, let's put your Pac-Man skills to the test.<br>
 See you on the other side.<br>
 Hit START to play
+</div>
 <button onclick="startGame()">START</button>
 </div>
 
-<div id="endScreen" style="display:none;"></div>
-
 </div>
 
-<!-- joystick BELOW -->
-<div id="joystick">
-<div id="stick"></div>
-</div>
+<div id="joystick"><div id="stick"></div></div>
 
 <script>
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
@@ -119,72 +102,80 @@ const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
 
-let score,lives,player,beatFrame,mouthOpen,gameInterval;
-let hearts,ghosts,sparkles;
-
-const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-
-function chompSound(){
-  const osc=audioCtx.createOscillator();
-  const gain=audioCtx.createGain();
-  osc.type="square";
-  osc.frequency.value=500;
-  gain.gain.value=.15;
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime+.08);
-}
+let player, hearts, ghosts, sparkles;
+let score, lives, beatFrame, mouthOpen, gameLoop;
+let gameState = "menu";
 
 function drawHeart(x,y){
-  const px=x*grid,py=y*grid;
-  const size=3+Math.sin(beatFrame/5)*.7;
-  const sprite=[
-  [0,1,1,0,1,1,0],
-  [1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,0],
-  [0,0,1,1,1,0,0],
-  [0,0,0,1,0,0,0]];
-  ctx.fillStyle="#FF3333";
-  sprite.forEach((r,ri)=>r.forEach((c,ci)=>{
-    if(c)ctx.fillRect(px+ci*size,py+ri*size,size,size);
-  }));
+  const px=x*grid, py=y*grid;
+  ctx.fillStyle="#ff3333";
+  ctx.beginPath();
+  ctx.arc(px+8,py+6,4,Math.PI,0);
+  ctx.arc(px+12,py+6,4,Math.PI,0);
+  ctx.lineTo(px+10,py+14);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawGhost(g){
+  const x=g.px,y=g.py,w=14,h=14;
+
+  ctx.fillStyle=g.color;
+  ctx.beginPath();
+  ctx.arc(x+w/2,y+w/2,w/2,Math.PI,0);
+  ctx.lineTo(x+w,y+h-3);
+  ctx.lineTo(x+w-3,y+h);
+  ctx.lineTo(x+w-6,y+h-3);
+  ctx.lineTo(x+w-9,y+h);
+  ctx.lineTo(x+w-12,y+h-3);
+  ctx.lineTo(x,y+h-3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle="white";
+  ctx.fillRect(x+3,y+6,2,3);
+  ctx.fillRect(x+8,y+6,2,3);
 }
 
 function draw(){
-  ctx.clearRect(0,0,320,450);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(gameState==="win"){
+    ctx.fillStyle="#4a0015";
+    ctx.textAlign="center";
+    ctx.font="28px monospace";
+    ctx.fillText("YOU WIN!",160,120);
+    ctx.font="24px monospace";
+    ctx.fillText("Miriam,",160,200);
+    ctx.fillText("Will You Be",160,240);
+    ctx.fillText("My Valentine? ♥",160,280);
+    return;
+  }
+
   hearts.forEach(h=>drawHeart(h.x,h.y));
 
-  const px=player.px+8,py=player.py+8;
-  let a=0;
-  if(player.dx===1)a=0;
-  if(player.dx===-1)a=Math.PI;
-  if(player.dy===-1)a=-Math.PI/2;
-  if(player.dy===1)a=Math.PI/2;
+  const px=player.px+8, py=player.py+8;
+  let angle=0;
+  if(player.dx===1) angle=0;
+  else if(player.dx===-1) angle=Math.PI;
+  else if(player.dy===-1) angle=-Math.PI/2;
+  else if(player.dy===1) angle=Math.PI/2;
 
+  const mouth=mouthOpen?0.25*Math.PI:0;
   ctx.fillStyle="yellow";
   ctx.beginPath();
   ctx.moveTo(px,py);
-  ctx.arc(px,py,7,a+.6,a+2*Math.PI-.6);
+  ctx.arc(px,py,7,angle+mouth,angle+2*Math.PI-mouth);
   ctx.fill();
+  mouthOpen=!mouthOpen;
 
-  ghosts.forEach(g=>{
-    ctx.fillStyle=g.color;
-    ctx.fillRect(g.px,g.py,14,14);
-  });
+  ghosts.forEach(drawGhost);
 
-  sparkles.forEach(s=>{
-    ctx.fillStyle="white";
-    ctx.fillRect(s.x,s.y,s.size,s.size);
-    s.y--;s.size*=.95;
-  });
-
-  sparkles=sparkles.filter(s=>s.size>.5);
   beatFrame++;
 }
 
 function update(){
-  if(!player)return;
+  if(gameState!=="play") return;
 
   player.px+=player.dx*4;
   player.py+=player.dy*4;
@@ -196,131 +187,114 @@ function update(){
   player.y=Math.floor(player.py/grid);
 
   ghosts.forEach(g=>{
-    if(!g.tx||Math.random()<.02){
-      g.tx=Math.random()*304;
-      g.ty=Math.random()*434;
+    if(!g.target || Math.random()<0.02){
+      g.target={x:Math.random()*300,y:Math.random()*430};
     }
-    g.px+=(g.tx-g.px)/20;
-    g.py+=(g.ty-g.py)/20;
+    const dx=g.target.x-g.px;
+    const dy=g.target.y-g.py;
+    const d=Math.hypot(dx,dy);
+    if(d>1){
+      g.px+=dx/d*1.5;
+      g.py+=dy/d*1.5;
+    }
   });
-
-  checkCollisions();
-  draw();
-}
-
-function checkCollisions(){
 
   hearts=hearts.filter(h=>{
     if(h.x===player.x&&h.y===player.y){
-      score++;scoreEl.textContent=score;
-      chompSound();
+      score++;
+      scoreEl.textContent=score;
       return false;
     }
     return true;
   });
 
   ghosts.forEach(g=>{
-    if(Math.abs(g.px-player.px)<12&&Math.abs(g.py-player.py)<12){
-      lives--;livesEl.textContent=lives;
-      player.px=160;player.py=200;
-      if(lives<=0)gameOver();
+    if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
+      lives--;
+      livesEl.textContent=lives;
+      player.px=160; player.py=200;
+      if(lives<=0) reset();
     }
   });
 
-  if(score>=15)win();
-}
+  if(score>=15){
+    gameState="win";
+    clearInterval(gameLoop);
+  }
 
-function gameOver(){
-  clearInterval(gameInterval);
-  ctx.clearRect(0,0,320,450);
-  ctx.fillStyle="#4a0015";
-  ctx.textAlign="center";
-  ctx.font="18px monospace";
-  ctx.fillText("Try Again!",160,220);
-}
-
-/* STATIC WIN SCREEN */
-function win(){
-  clearInterval(gameInterval);
-  ctx.clearRect(0,0,320,450);
-
-  ctx.fillStyle="#4a0015";
-  ctx.textAlign="center";
-
-  ctx.font="28px monospace";
-  ctx.fillText("YOU WIN!",160,120);
-
-  ctx.font="32px monospace";
-  ctx.fillText("Miriam,",160,200);
-  ctx.fillText("Will You Be",160,240);
-  ctx.fillText("My Valentine? ♥",160,280);
+  draw();
 }
 
 function startGame(){
   startScreen.style.display="none";
+  reset();
+}
 
-  score=0;lives=3;
-  scoreEl.textContent=0;
-  livesEl.textContent=3;
-
-  beatFrame=0;mouthOpen=true;
+function reset(){
+  gameState="play";
+  score=0; lives=3;
+  scoreEl.textContent=score;
+  livesEl.textContent=lives;
 
   player={px:160,py:200,dx:0,dy:0};
 
   hearts=[];
-  for(let i=0;i<15;i++)
-    hearts.push({x:Math.floor(Math.random()*20),
-                 y:Math.floor(Math.random()*28)});
-
-  ghosts=[
-  {px:40,py:40,color:"#CC0000"},
-  {px:200,py:60,color:"#00FFFF"},
-  {px:120,py:300,color:"#FF8000"},
-  {px:260,py:200,color:"#FF007F"}];
-
-  sparkles=[];
-
-  clearInterval(gameInterval);
-  gameInterval=setInterval(update,50);
-  draw();
-}
-
-/* joystick */
-const joystick=document.getElementById("joystick");
-const stick=document.getElementById("stick");
-
-function moveStick(t){
-  const r=joystick.getBoundingClientRect();
-  let x=t.clientX-(r.left+r.width/2);
-  let y=t.clientY-(r.top+r.height/2);
-
-  const absX=Math.abs(x),absY=Math.abs(y);
-
-  if(absX>absY){
-    player.dx=x>0?1:-1;player.dy=0;
-  }else{
-    player.dy=y>0?1:-1;player.dx=0;
+  for(let i=0;i<15;i++){
+    hearts.push({
+      x:Math.floor(Math.random()*20),
+      y:Math.floor(Math.random()*28)
+    });
   }
 
-  stick.style.transform=`translate(${x/3}px,${y/3}px)`;
+  ghosts=[
+    {px:40,py:40,color:"#ff4444"},
+    {px:200,py:60,color:"#00ffff"},
+    {px:100,py:200,color:"#ff8800"}
+  ];
+
+  beatFrame=0;
+  mouthOpen=true;
+
+  clearInterval(gameLoop);
+  gameLoop=setInterval(update,50);
 }
 
-joystick.addEventListener("touchmove",e=>{
-  moveStick(e.touches[0]);
-});
+const joystick=document.getElementById("joystick");
+const stick=document.getElementById("stick");
+let sx=0, sy=0, moving=false;
 
+function updateDir(){
+  if(!player) return;
+  const ax=Math.abs(sx), ay=Math.abs(sy);
+  if(Math.max(ax,ay)<10){player.dx=0;player.dy=0;}
+  else if(ax>ay){player.dx=sx>0?1:-1;player.dy=0;}
+  else{player.dy=sy>0?1:-1;player.dx=0;}
+}
+
+joystick.addEventListener("touchstart",e=>{moving=true;move(e.touches[0]);});
+joystick.addEventListener("touchmove",e=>{if(moving)move(e.touches[0]);});
 joystick.addEventListener("touchend",()=>{
-  player.dx=player.dy=0;
+  moving=false;
   stick.style.transform="translate(-50%,-50%)";
+  sx=sy=0;
+  updateDir();
 });
 
-document.addEventListener("keydown",e=>{
-  if(e.key==="ArrowUp")player.dy=-1,player.dx=0;
-  if(e.key==="ArrowDown")player.dy=1,player.dx=0;
-  if(e.key==="ArrowLeft")player.dx=-1,player.dy=0;
-  if(e.key==="ArrowRight")player.dx=1,player.dy=0;
-});
+function move(t){
+  const r=joystick.getBoundingClientRect();
+  const cx=r.left+r.width/2;
+  const cy=r.top+r.height/2;
+  sx=t.clientX-cx;
+  sy=t.clientY-cy;
 
+  const max=r.width/2-30;
+  const a=Math.atan2(sy,sx);
+  const d=Math.min(Math.hypot(sx,sy),max);
+
+  stick.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
+  updateDir();
+}
 </script>
+
 </body>
 </html>
