@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title> Miriam's Valentine PacMan Game</title>
+<title>Miriam's PacMan Game</title>
 <style>
 html, body {
   margin: 0;
@@ -45,7 +45,7 @@ canvas {
   font-family: monospace;
   z-index: 10;
 }
-#startScreen button {
+#startScreen button, #endScreen button {
   font-size: 20px;
   padding: 10px 20px;
   margin-top: 20px;
@@ -55,16 +55,14 @@ canvas {
   border-radius: 4px;
 }
 
-/* Analog stick */
+/* Analog stick below game screen */
 #joystick {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin: 20px auto;
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: black; /* outer circle */
+  background: black;
   touch-action: none;
   z-index: 5;
 }
@@ -72,7 +70,7 @@ canvas {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: yellow; /* inner circle */
+  background: yellow;
   position: absolute;
   left: 50%;
   top: 50%;
@@ -82,7 +80,7 @@ canvas {
 </head>
 <body>
 
-<h2 style="font-size:16px; color:black;">Valentine Chase Game</h2>
+<h2 style="font-size:16px; color:black;">Miriam's PacMan</h2>
 
 <div id="screen">
   <div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
@@ -96,11 +94,11 @@ canvas {
   </div>
 
   <div id="endScreen" style="display:none;"></div>
+</div>
 
-  <!-- Analog joystick -->
-  <div id="joystick">
-    <div id="stick"></div>
-  </div>
+<!-- Analog joystick below screen -->
+<div id="joystick">
+  <div id="stick"></div>
 </div>
 
 <script>
@@ -115,10 +113,8 @@ const grid = 16;
 let score, lives, player, beatFrame, mouthOpen, gameInterval;
 let hearts, ghosts, sparkles;
 
-// Audio context
+// Audio
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-// Chomp / crunch sound
 function chompSound() {
   const times = [0, 0.1];
   times.forEach(offset => {
@@ -133,7 +129,7 @@ function chompSound() {
   });
 }
 
-// Draw red pixel heart pellet with pulsing
+// Draw heart pellet
 function drawHeart(x,y){
   const px = x*grid;
   const py = y*grid;
@@ -156,7 +152,7 @@ function drawHeart(x,y){
   }
 }
 
-// Draw everything
+// Draw game
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   hearts.forEach(h => drawHeart(h.x,h.y));
@@ -190,10 +186,11 @@ function draw(){
     s.size *= 0.95;
   });
   sparkles = sparkles.filter(s=>s.size>0);
+
   beatFrame++;
 }
 
-// Set player movement from analog stick
+// Set direction
 function setDirection(dx,dy){
   if(player) player.dx = dx, player.dy = dy;
 }
@@ -228,7 +225,7 @@ function update(){
   draw();
 }
 
-// Collision checks
+// Collision
 function checkCollisions(){
   hearts = hearts.filter(h=>{
     if(h.x===player.x && h.y===player.y){
@@ -257,7 +254,7 @@ function checkCollisions(){
   if(score >= 15) win();
 }
 
-// Game over message
+// Game over
 function gameOver(){
   clearInterval(gameInterval);
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -269,7 +266,7 @@ function gameOver(){
   ctx.fillText("Try Again!", canvas.width/2, canvas.height/2 + 40);
 }
 
-// Win animation (slower)
+// Win animation (slower, hearts behind text)
 function win(){
   const floatingHearts = [];
   for(let i=0;i<50;i++){
@@ -277,7 +274,7 @@ function win(){
       x: Math.random()*320,
       y: 450 + Math.random()*100,
       size: 4 + Math.random()*4,
-      speed: 0.5 + Math.random(),
+      speed: 0.3 + Math.random()*0.5,
       color: Math.random()>0.5 ? "#FF3333" : "#FF007F",
       offset: Math.random()*Math.PI*2
     });
@@ -286,13 +283,16 @@ function win(){
   let frame=0;
   const anim=setInterval(()=>{
     ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Hearts behind text
     floatingHearts.forEach(h=>{
       ctx.fillStyle=h.color;
       ctx.beginPath();
-      ctx.arc(h.x + Math.sin(Date.now()/800 + h.offset)*10, h.y, h.size,0,Math.PI*2);
+      ctx.arc(h.x + Math.sin(Date.now()/1000 + h.offset)*10, h.y, h.size,0,Math.PI*2);
       ctx.fill();
       h.y -= h.speed;
     });
+
     ctx.fillStyle="#4a0015";
     ctx.textAlign="center";
     ctx.font="28px monospace";
@@ -301,6 +301,7 @@ function win(){
     ctx.fillText("Miriam,", canvas.width/2, 180 + frame/2);
     ctx.fillText("Will You Be", canvas.width/2, 220 + frame/2);
     ctx.fillText("My Valentine? ♥", canvas.width/2, 260 + frame/2);
+
     frame += 1;
     if(frame>120) clearInterval(anim);
   },60);
@@ -336,7 +337,7 @@ function startGame(){
   draw();
 }
 
-// Analog stick logic
+// Analog stick logic (non-diagonal)
 const joystick = document.getElementById("joystick");
 const stick = document.getElementById("stick");
 let stickX = 0, stickY = 0;
@@ -344,19 +345,21 @@ let moving = false;
 
 function updatePlayerDirection(){
   if(!player) return;
-  const mag = Math.sqrt(stickX*stickX + stickY*stickY);
-  if(mag < 10){
-    player.dx = 0;
+  const absX = Math.abs(stickX);
+  const absY = Math.abs(stickY);
+  if(Math.max(absX, absY) < 10){
+    player.dx = 0; player.dy = 0;
+  } else if(absX > absY){
+    player.dx = stickX > 0 ? 1 : -1;
     player.dy = 0;
   } else {
-    player.dx = stickX/mag;
-    player.dy = stickY/mag;
+    player.dy = stickY > 0 ? 1 : -1;
+    player.dx = 0;
   }
 }
 
 joystick.addEventListener("touchstart", e=>{
-  moving = true;
-  moveStick(e.touches[0]);
+  moving = true; moveStick(e.touches[0]);
 });
 joystick.addEventListener("touchmove", e=>{
   if(moving) moveStick(e.touches[0]);
