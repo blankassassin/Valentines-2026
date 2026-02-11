@@ -139,9 +139,14 @@ function drawGhost(g){
   ctx.strokeStyle="black";
   ctx.lineWidth=1;
   ctx.stroke();
-  ctx.fillStyle="white";
-  ctx.fillRect(x+3,y+4,2,5);
-  ctx.fillRect(x+8,y+4,2,5);
+  ctx.fillStyle = "white";
+ctx.fillRect(x+3, y+4, 3, 5);   // left eye
+ctx.strokeStyle = "black";       // outline color
+ctx.lineWidth = 1;
+ctx.strokeRect(x+3, y+4, 3, 5); // left eye outline
+
+ctx.fillRect(x+8, y+4, 3, 5);   // right eye
+ctx.strokeRect(x+8, y+4, 3, 5); // right eye outline
 }
 
 /* ---------- KIRBY PLAYER ---------- */
