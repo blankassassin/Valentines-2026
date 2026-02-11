@@ -97,14 +97,14 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 <div id="joystick"><div id="stick"></div></div>
 
 <script>
-const canvas = game;
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 2 // hearts needed to win
+const WIN_SCORE = 2; // hearts needed to win
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -142,7 +142,7 @@ function drawGhost(g){
   ctx.lineWidth=1;
   ctx.stroke();
   ctx.fillStyle="white";
-  ctx.fillRect(x+3,y+4,2,5); // taller eyes
+  ctx.fillRect(x+3,y+4,2,5);
   ctx.fillRect(x+8,y+4,2,5);
 }
 
@@ -214,9 +214,8 @@ function drawStars(){
 function draw(){
   ctx.clearRect(0,0,320,450);
 
-  // Win screen
   if(state==="win"){
-    // toggle color for YOU WIN! twice per second
+    // toggle color for YOU WIN!
     if(Date.now() - lastToggle > 500){
         winTextColorToggle = !winTextColorToggle;
         lastToggle = Date.now();
@@ -226,9 +225,9 @@ function draw(){
     ctx.font="32px monospace";
     ctx.fillText("YOU WIN!",160,60);
 
-    // draw win image
+    // win image
     if(winImage.complete){
-        let size = 150; // square
+        let size = 150;
         ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
     }
 
@@ -336,7 +335,7 @@ function update(){
   if(score >= WIN_SCORE){
       state = "win";
       clearInterval(loop);
-      requestAnimationFrame(draw); // keep draw running for flashing text
+      requestAnimationFrame(draw);
   }
 
   draw();
@@ -361,10 +360,11 @@ function reset(){
     for(let i=0;i<WIN_SCORE;i++){
         hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
     }
+
     // spawn 3 yellow stars
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+    for(let i=0;i<3;i++){
+        stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
+    }
  
     ghosts=[
         {px:40,py:40,color:"#cc0000"},
@@ -420,7 +420,7 @@ canvas.addEventListener("click", function(e){
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         if(x>=90 && x<=230 && y>=370 && y<=410){
-            location.reload(); // refresh to restart
+            reset(); // restart without reloading
         }
     }
 });
