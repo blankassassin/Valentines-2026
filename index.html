@@ -3,6 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Miriam's PacMan Game</title>
+
 <style>
 html, body {
   margin: 0;
@@ -11,12 +12,14 @@ html, body {
   touch-action: none;
   -webkit-user-select: none;
 }
+
 body {
   background: #5c1a2b;
   font-family: monospace;
   text-align: center;
   color: #4a0015;
 }
+
 #screen {
   background: #ff9bb3;
   border: 12px solid #4a0015;
@@ -27,11 +30,13 @@ body {
   position: relative;
   overflow: hidden;
 }
+
 canvas {
   background: #ff9bb3;
   display: block;
   margin: auto;
 }
+
 #startScreen, #endScreen {
   position: absolute;
   top:0; left:0;
@@ -42,10 +47,10 @@ canvas {
   justify-content: center;
   align-items: center;
   color:#4a0015;
-  font-family: monospace;
   z-index: 10;
 }
-#startScreen button, #endScreen button {
+
+#startScreen button {
   font-size: 20px;
   padding: 10px 20px;
   margin-top: 20px;
@@ -55,17 +60,16 @@ canvas {
   border-radius: 4px;
 }
 
-/* Analog stick below game screen */
+/* joystick BELOW game */
 #joystick {
-  position: relative;
   margin: 20px auto;
   width: 120px;
   height: 120px;
   border-radius: 50%;
   background: black;
-  touch-action: none;
-  z-index: 5;
+  position: relative;
 }
+
 #stick {
   width: 60px;
   height: 60px;
@@ -78,101 +82,91 @@ canvas {
 }
 </style>
 </head>
+
 <body>
 
-<h2 style="font-size:16px; color:black;">Miriam's PacMan</h2>
+<h2 style="font-size:16px;color:black;">Miriam's PacMan</h2>
 
 <div id="screen">
-  <div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
-  <canvas id="game" width="320" height="450"></canvas>
 
-  <div id="startScreen">
-    <div>Hi baby, let's put your Pac-Man skills to the test.<br>
-    See you on the other side.<br>
-    Hit START to play</div>
-    <button onclick="startGame()">START</button>
-  </div>
+<div>Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
 
-  <div id="endScreen" style="display:none;"></div>
+<canvas id="game" width="320" height="450"></canvas>
+
+<div id="startScreen">
+Hi baby, let's put your Pac-Man skills to the test.<br>
+See you on the other side.<br>
+Hit START to play
+<button onclick="startGame()">START</button>
 </div>
 
-<!-- Analog joystick below screen -->
+<div id="endScreen" style="display:none;"></div>
+
+</div>
+
+<!-- joystick BELOW -->
 <div id="joystick">
-  <div id="stick"></div>
+<div id="stick"></div>
 </div>
 
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
-const endScreen = document.getElementById("endScreen");
+
 const grid = 16;
 
-let score, lives, player, beatFrame, mouthOpen, gameInterval;
-let hearts, ghosts, sparkles;
+let score,lives,player,beatFrame,mouthOpen,gameInterval;
+let hearts,ghosts,sparkles;
 
-// Audio
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function chompSound() {
-  const times = [0, 0.1];
-  times.forEach(offset => {
-    const osc = audioCtx.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(400 + Math.random()*200, audioCtx.currentTime + offset);
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + offset);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime + offset);
-    osc.stop(audioCtx.currentTime + offset + 0.1);
-  });
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+function chompSound(){
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.type="square";
+  osc.frequency.value=500;
+  gain.gain.value=.15;
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime+.08);
 }
 
-// Draw heart pellet
 function drawHeart(x,y){
-  const px = x*grid;
-  const py = y*grid;
-  const baseSize = 3.2;
-  const pulse = Math.sin(beatFrame/5)*0.8;
-  const size = baseSize + pulse;
+  const px=x*grid,py=y*grid;
+  const size=3+Math.sin(beatFrame/5)*.7;
   const sprite=[
-    [0,1,1,0,1,1,0],
-    [1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1],
-    [0,1,1,1,1,1,0],
-    [0,0,1,1,1,0,0],
-    [0,0,0,1,0,0,0]
-  ];
+  [0,1,1,0,1,1,0],
+  [1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1],
+  [0,1,1,1,1,1,0],
+  [0,0,1,1,1,0,0],
+  [0,0,0,1,0,0,0]];
   ctx.fillStyle="#FF3333";
-  for(let r=0;r<sprite.length;r++){
-    for(let c=0;c<sprite[r].length;c++){
-      if(sprite[r][c]) ctx.fillRect(px+c*size, py+r*size, size, size);
-    }
-  }
+  sprite.forEach((r,ri)=>r.forEach((c,ci)=>{
+    if(c)ctx.fillRect(px+ci*size,py+ri*size,size,size);
+  }));
 }
 
-// Draw game
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  hearts.forEach(h => drawHeart(h.x,h.y));
+  ctx.clearRect(0,0,320,450);
+  hearts.forEach(h=>drawHeart(h.x,h.y));
 
-  const px = player.px + grid/2;
-  const py = player.py + grid/2;
-  let angle = 0;
-  if(player.dx===1) angle = 0;
-  else if(player.dx===-1) angle = Math.PI;
-  else if(player.dy===-1) angle = -Math.PI/2;
-  else if(player.dy===1) angle = Math.PI/2;
+  const px=player.px+8,py=player.py+8;
+  let a=0;
+  if(player.dx===1)a=0;
+  if(player.dx===-1)a=Math.PI;
+  if(player.dy===-1)a=-Math.PI/2;
+  if(player.dy===1)a=Math.PI/2;
 
-  const mouthAngle = mouthOpen ? 0.25*Math.PI : 0;
   ctx.fillStyle="yellow";
   ctx.beginPath();
   ctx.moveTo(px,py);
-  ctx.arc(px,py,7, angle + mouthAngle, angle + 2*Math.PI - mouthAngle);
-  ctx.closePath();
+  ctx.arc(px,py,7,a+.6,a+2*Math.PI-.6);
   ctx.fill();
-  mouthOpen = !mouthOpen;
 
   ghosts.forEach(g=>{
     ctx.fillStyle=g.color;
@@ -182,220 +176,151 @@ function draw(){
   sparkles.forEach(s=>{
     ctx.fillStyle="white";
     ctx.fillRect(s.x,s.y,s.size,s.size);
-    s.y -= 1;
-    s.size *= 0.95;
+    s.y--;s.size*=.95;
   });
-  sparkles = sparkles.filter(s=>s.size>0);
 
+  sparkles=sparkles.filter(s=>s.size>.5);
   beatFrame++;
 }
 
-// Set direction
-function setDirection(dx,dy){
-  if(player) player.dx = dx, player.dy = dy;
-}
-
-// Update game
 function update(){
-  if(!player) return;
-  player.px += player.dx * 4;
-  player.py += player.dy * 4;
-  player.px = Math.max(0, Math.min(320-16, player.px));
-  player.py = Math.max(0, Math.min(450-16, player.py));
-  player.x = Math.floor(player.px/grid);
-  player.y = Math.floor(player.py/grid);
+  if(!player)return;
+
+  player.px+=player.dx*4;
+  player.py+=player.dy*4;
+
+  player.px=Math.max(0,Math.min(304,player.px));
+  player.py=Math.max(0,Math.min(434,player.py));
+
+  player.x=Math.floor(player.px/grid);
+  player.y=Math.floor(player.py/grid);
 
   ghosts.forEach(g=>{
-    if(!g.targetX || Math.random()<0.02){
-      g.targetX = Math.floor(Math.random()*20)*grid;
-      g.targetY = Math.floor(Math.random()*28)*grid;
-      g.offset = Math.random()*Math.PI*2;
+    if(!g.tx||Math.random()<.02){
+      g.tx=Math.random()*304;
+      g.ty=Math.random()*434;
     }
-    const dx = g.targetX - g.px;
-    const dy = g.targetY - g.py;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const speed = 2;
-    if(dist>1){
-      g.px += dx/dist*speed + Math.sin(Date.now()/500 + g.offset);
-      g.py += dy/dist*speed;
-    }
+    g.px+=(g.tx-g.px)/20;
+    g.py+=(g.ty-g.py)/20;
   });
 
   checkCollisions();
   draw();
 }
 
-// Collision
 function checkCollisions(){
-  hearts = hearts.filter(h=>{
-    if(h.x===player.x && h.y===player.y){
-      score++;
-      scoreEl.textContent=score;
+
+  hearts=hearts.filter(h=>{
+    if(h.x===player.x&&h.y===player.y){
+      score++;scoreEl.textContent=score;
       chompSound();
-      for(let i=0;i<5;i++) sparkles.push({x:player.px+7, y:player.py+7, size:2+Math.random()*2});
       return false;
     }
     return true;
   });
 
   ghosts.forEach(g=>{
-    if(Math.abs(g.px-player.px)<12 && Math.abs(g.py-player.py)<12){
-      lives--;
-      livesEl.textContent=lives;
-      chompSound();
-      player.px=10*grid;
-      player.py=10*grid;
-      player.dx=0;
-      player.dy=0;
-      if(lives<=0) gameOver();
+    if(Math.abs(g.px-player.px)<12&&Math.abs(g.py-player.py)<12){
+      lives--;livesEl.textContent=lives;
+      player.px=160;player.py=200;
+      if(lives<=0)gameOver();
     }
   });
 
-  if(score >= 15) win();
+  if(score>=15)win();
 }
 
-// Game over
 function gameOver(){
   clearInterval(gameInterval);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,320,450);
   ctx.fillStyle="#4a0015";
-  ctx.font="18px monospace";
   ctx.textAlign="center";
-  ctx.fillText("I believe in your skills so, I doubt you'll see this", canvas.width/2, canvas.height/2 - 20);
-  ctx.fillText("Anyway.", canvas.width/2, canvas.height/2 + 10);
-  ctx.fillText("Try Again!", canvas.width/2, canvas.height/2 + 40);
+  ctx.font="18px monospace";
+  ctx.fillText("Try Again!",160,220);
 }
 
-// Win animation (slower, hearts behind text)
+/* STATIC WIN SCREEN */
 function win(){
-  const floatingHearts = [];
-  for(let i=0;i<50;i++){
-    floatingHearts.push({
-      x: Math.random()*320,
-      y: 450 + Math.random()*100,
-      size: 4 + Math.random()*4,
-      speed: 0.3 + Math.random()*0.5,
-      color: Math.random()>0.5 ? "#FF3333" : "#FF007F",
-      offset: Math.random()*Math.PI*2
-    });
-  }
+  clearInterval(gameInterval);
+  ctx.clearRect(0,0,320,450);
 
-  let frame=0;
-  const anim=setInterval(()=>{
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#4a0015";
+  ctx.textAlign="center";
 
-    // Hearts behind text
-    floatingHearts.forEach(h=>{
-      ctx.fillStyle=h.color;
-      ctx.beginPath();
-      ctx.arc(h.x + Math.sin(Date.now()/1000 + h.offset)*10, h.y, h.size,0,Math.PI*2);
-      ctx.fill();
-      h.y -= h.speed;
-    });
+  ctx.font="28px monospace";
+  ctx.fillText("YOU WIN!",160,120);
 
-    ctx.fillStyle="#4a0015";
-    ctx.textAlign="center";
-    ctx.font="28px monospace";
-    ctx.fillText("YOU WIN!", canvas.width/2, 100 + frame/2);
-    ctx.font="32px monospace";
-    ctx.fillText("Miriam,", canvas.width/2, 180 + frame/2);
-    ctx.fillText("Will You Be", canvas.width/2, 220 + frame/2);
-    ctx.fillText("My Valentine? ♥", canvas.width/2, 260 + frame/2);
-
-    frame += 1;
-    if(frame>120) clearInterval(anim);
-  },60);
+  ctx.font="32px monospace";
+  ctx.fillText("Miriam,",160,200);
+  ctx.fillText("Will You Be",160,240);
+  ctx.fillText("My Valentine? ♥",160,280);
 }
 
-// Start game
 function startGame(){
   startScreen.style.display="none";
-  score = 0;
-  lives = 3;
-  scoreEl.textContent = score;
-  livesEl.textContent = lives;
-  beatFrame = 0;
-  mouthOpen = true;
-  player = {x:10, y:10, dx:0, dy:0, px:10*grid, py:10*grid};
-  sparkles = [];
 
-  hearts = [];
-  for(let i=0;i<15;i++){
-    hearts.push({x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*28)});
-  }
+  score=0;lives=3;
+  scoreEl.textContent=0;
+  livesEl.textContent=3;
 
-  ghosts = [
-    {x:5, y:5, px:5*grid, py:5*grid, color:"#CC0000"},
-    {x:15, y:10, px:15*grid, py:10*grid, color:"#00FFFF"},
-    {x:10, y:20, px:10*grid, py:20*grid, color:"#FF8000"},
-    {x:0, y:0, px:0, py:0, color:"#FF007F"}
-  ];
+  beatFrame=0;mouthOpen=true;
 
-  if(gameInterval) clearInterval(gameInterval);
-  endScreen.style.display="none";
-  gameInterval = setInterval(update,50);
+  player={px:160,py:200,dx:0,dy:0};
+
+  hearts=[];
+  for(let i=0;i<15;i++)
+    hearts.push({x:Math.floor(Math.random()*20),
+                 y:Math.floor(Math.random()*28)});
+
+  ghosts=[
+  {px:40,py:40,color:"#CC0000"},
+  {px:200,py:60,color:"#00FFFF"},
+  {px:120,py:300,color:"#FF8000"},
+  {px:260,py:200,color:"#FF007F"}];
+
+  sparkles=[];
+
+  clearInterval(gameInterval);
+  gameInterval=setInterval(update,50);
   draw();
 }
 
-// Analog stick logic (non-diagonal)
-const joystick = document.getElementById("joystick");
-const stick = document.getElementById("stick");
-let stickX = 0, stickY = 0;
-let moving = false;
+/* joystick */
+const joystick=document.getElementById("joystick");
+const stick=document.getElementById("stick");
 
-function updatePlayerDirection(){
-  if(!player) return;
-  const absX = Math.abs(stickX);
-  const absY = Math.abs(stickY);
-  if(Math.max(absX, absY) < 10){
-    player.dx = 0; player.dy = 0;
-  } else if(absX > absY){
-    player.dx = stickX > 0 ? 1 : -1;
-    player.dy = 0;
-  } else {
-    player.dy = stickY > 0 ? 1 : -1;
-    player.dx = 0;
+function moveStick(t){
+  const r=joystick.getBoundingClientRect();
+  let x=t.clientX-(r.left+r.width/2);
+  let y=t.clientY-(r.top+r.height/2);
+
+  const absX=Math.abs(x),absY=Math.abs(y);
+
+  if(absX>absY){
+    player.dx=x>0?1:-1;player.dy=0;
+  }else{
+    player.dy=y>0?1:-1;player.dx=0;
   }
+
+  stick.style.transform=`translate(${x/3}px,${y/3}px)`;
 }
 
-joystick.addEventListener("touchstart", e=>{
-  moving = true; moveStick(e.touches[0]);
-});
-joystick.addEventListener("touchmove", e=>{
-  if(moving) moveStick(e.touches[0]);
-});
-joystick.addEventListener("touchend", e=>{
-  moving = false;
-  stick.style.transform = "translate(-50%, -50%)";
-  stickX = 0; stickY = 0;
-  updatePlayerDirection();
+joystick.addEventListener("touchmove",e=>{
+  moveStick(e.touches[0]);
 });
 
-function moveStick(touch){
-  const rect = joystick.getBoundingClientRect();
-  const centerX = rect.left + rect.width/2;
-  const centerY = rect.top + rect.height/2;
-  stickX = touch.clientX - centerX;
-  stickY = touch.clientY - centerY;
-  const max = rect.width/2 - 30;
-  const angle = Math.atan2(stickY, stickX);
-  const distance = Math.min(Math.sqrt(stickX*stickX + stickY*stickY), max);
-  const posX = Math.cos(angle)*distance;
-  const posY = Math.sin(angle)*distance;
-  stick.style.transform = `translate(${posX}px, ${posY}px)`;
-  updatePlayerDirection();
-}
-
-// Keyboard controls
-document.addEventListener('keydown', e=>{
-  switch(e.key){
-    case "ArrowUp": setDirection(0,-1); break;
-    case "ArrowDown": setDirection(0,1); break;
-    case "ArrowLeft": setDirection(-1,0); break;
-    case "ArrowRight": setDirection(1,0); break;
-  }
+joystick.addEventListener("touchend",()=>{
+  player.dx=player.dy=0;
+  stick.style.transform="translate(-50%,-50%)";
 });
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowUp")player.dy=-1,player.dx=0;
+  if(e.key==="ArrowDown")player.dy=1,player.dx=0;
+  if(e.key==="ArrowLeft")player.dx=-1,player.dy=0;
+  if(e.key==="ArrowRight")player.dx=1,player.dy=0;
+});
+
 </script>
-
 </body>
 </html>
