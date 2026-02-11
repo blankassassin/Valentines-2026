@@ -55,27 +55,28 @@ canvas {
   border-radius: 4px;
 }
 
-/* D-Pad Controls */
-.controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 15px;
+/* Joystick */
+#joystick {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255,111,145,0.3);
+  touch-action: none;
+  z-index: 5;
 }
-.controls .row {
-  display: flex;
-  justify-content: center;
-  margin: 8px 0;
-}
-.controls button {
-  font-size: 30px;
-  padding: 18px;
-  margin: 0 10px;
-  background: #ff6f91;
-  border: 2px solid #4a0015;
-  color: #4a0015;
-  border-radius: 6px;
-  min-width: 60px;
+#stick {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #FF6F91;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>
 </head>
@@ -95,16 +96,11 @@ canvas {
   </div>
 
   <div id="endScreen" style="display:none;"></div>
-</div>
 
-<div class="controls">
-  <div class="row"><button onclick="setDirection(0,-1)">▲</button></div>
-  <div class="row">
-    <button onclick="setDirection(-1,0)">◀</button>
-    <div style="width:50px;"></div>
-    <button onclick="setDirection(1,0)">▶</button>
+  <!-- Analog joystick -->
+  <div id="joystick">
+    <div id="stick"></div>
   </div>
-  <div class="row"><button onclick="setDirection(0,1)">▼</button></div>
 </div>
 
 <script>
@@ -197,7 +193,7 @@ function draw(){
   beatFrame++;
 }
 
-// Move player
+// Set player movement from analog stick
 function setDirection(dx,dy){
   if(player) player.dx = dx, player.dy = dy;
 }
@@ -341,6 +337,53 @@ function startGame(){
   endScreen.style.display="none";
   gameInterval = setInterval(update,50);
   draw();
+}
+
+// Analog stick logic
+const joystick = document.getElementById("joystick");
+const stick = document.getElementById("stick");
+let stickX = 0, stickY = 0;
+let moving = false;
+
+function updatePlayerDirection(){
+  if(!player) return;
+  const mag = Math.sqrt(stickX*stickX + stickY*stickY);
+  if(mag < 10){
+    player.dx = 0;
+    player.dy = 0;
+  } else {
+    player.dx = stickX/mag;
+    player.dy = stickY/mag;
+  }
+}
+
+joystick.addEventListener("touchstart", e=>{
+  moving = true;
+  moveStick(e.touches[0]);
+});
+joystick.addEventListener("touchmove", e=>{
+  if(moving) moveStick(e.touches[0]);
+});
+joystick.addEventListener("touchend", e=>{
+  moving = false;
+  stick.style.transform = "translate(-50%, -50%)";
+  stickX = 0; stickY = 0;
+  updatePlayerDirection();
+});
+
+function moveStick(touch){
+  const rect = joystick.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+  stickX = touch.clientX - centerX;
+  stickY = touch.clientY - centerY;
+  const max = rect.width/2 - 30;
+  const angle = Math.atan2(stickY, stickX);
+  const distance = Math.min(Math.sqrt(stickX*stickX + stickY*stickY), max);
+  const posX = Math.cos(angle)*distance;
+  const posY = Math.sin(angle)*distance;
+  stick.style.transform = `translate(${posX}px, ${posY}px)`;
+  updatePlayerDirection();
 }
 
 // Keyboard controls
