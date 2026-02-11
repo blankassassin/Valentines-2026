@@ -84,6 +84,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 <div>
 Hi baby, let's put your Pac-Man skills to the test.<br>
 See you on the other side!<br>
+------ <br>
 Hit START to play!
 </div>
 <button onclick="startGame()">START</button>
@@ -102,7 +103,6 @@ const startScreen=document.getElementById("startScreen");
 const grid=16;
 let player,hearts,ghosts,sparkles=[],fireworks=[];
 let score,lives,loop,state="menu";
-let inhale=false;
 
 /* ---------- HEARTS ---------- */
 function drawHeart(x,y){
@@ -136,7 +136,7 @@ ctx.fillRect(x+8,y+6,2,3);
 /* ---------- KIRBY PLAYER ---------- */
 function drawKirby(px,py,celebrate=false){
 let bounce=celebrate?Math.sin(Date.now()/120)*4:Math.sin(Date.now()/180)*1.5;
-let size=inhale?10:8; // inhale expands Kirby
+let size=8;
 
 // body
 ctx.fillStyle="#ff9bd4";
@@ -250,16 +250,6 @@ player.y=Math.floor(player.py/grid);
 
 if(player.dx||player.dy)spawnSparkle();
 
-// Kirby inhale attracts hearts
-if(inhale){
-hearts.forEach(h=>{
-let dx=player.x-h.x;
-let dy=player.y-h.y;
-if(Math.abs(dx)<5)h.x+=dx*0.2;
-if(Math.abs(dy)<5)h.y+=dy*0.2;
-});
-}
-
 ghosts.forEach(g=>{
 if(!g.tx||Math.random()<0.02){
 g.tx=Math.random()*300;
@@ -328,11 +318,6 @@ if(e.key==="ArrowUp"){player.dx=0;player.dy=-1;}
 if(e.key==="ArrowDown"){player.dx=0;player.dy=1;}
 if(e.key==="ArrowLeft"){player.dx=-1;player.dy=0;}
 if(e.key==="ArrowRight"){player.dx=1;player.dy=0;}
-// Kirby inhale key
-if(e.key===" "){inhale=true;}
-});
-document.addEventListener("keyup",e=>{
-if(e.key===" "){inhale=false;}
 });
 
 /* ---------- JOYSTICK ---------- */
