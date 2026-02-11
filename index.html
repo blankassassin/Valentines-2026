@@ -4,7 +4,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>I Love You</title>
 
-<!-- Favicon & Mobile Home Screen Icons -->
 <link rel="shortcut icon" href="jmicon.jpg" type="image/jpeg">
 <link rel="apple-touch-icon" href="jmicon.jpg">
 <link rel="icon" sizes="192x192" href="jmicon.jpg">
@@ -91,7 +90,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hii baby,<br>
+    Hiiii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side shawty!<br>
@@ -112,7 +111,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 20; // hearts needed to win
+const WIN_SCORE = 20; 
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -121,6 +120,21 @@ let winImage = new Image();
 winImage.src = "jandm.png";
 let winTextColorToggle = false;
 let lastToggle = Date.now();
+
+/* ---------- HELPER: UNIQUE POSITIONS ---------- */
+function generateUniquePositions(count, maxX, maxY){
+    let positions = [];
+    for(let x=0; x<maxX; x++){
+        for(let y=0; y<maxY; y++){
+            positions.push({x,y});
+        }
+    }
+    for(let i=positions.length-1; i>0; i--){
+        const j = Math.floor(Math.random()* (i+1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    return positions.slice(0, count);
+}
 
 /* ---------- HEARTS ---------- */
 function drawHeart(x,y){
@@ -250,25 +264,34 @@ function draw(){
     ctx.font="32px monospace";
     ctx.fillText("YOU WIN!",160,60);
 
+    // ✨ Text above image
+    ctx.font="10px monospace";
+    ctx.fillStyle="pink";
+    ctx.fillText("All Hearts Caught!",160,100);
+    ctx.fillText("Now Catch Me Feb 14💖",160,125);
+
+    // Draw image
     if(winImage.complete){
         let size = 150;
-        ctx.drawImage(winImage, (canvas.width-size)/2, 100, size, size);
+        ctx.drawImage(winImage,(canvas.width-size)/2,150,size,size);
     }
 
+    // Valentine message below image
     ctx.fillStyle="#8B0000";
     ctx.font="24px monospace";
-    ctx.fillText("Miriam,",160,280);
-    ctx.fillText("Will You Be",160,310);
-    ctx.fillText("My Valentine? ♥",160,340);
+    ctx.fillText("Miriam,",160,320);
+    ctx.fillText("Will You Be",160,350);
+    ctx.fillText("My Valentine? ♥",160,380);
 
+    // Restart button
     ctx.fillStyle="#FF6F91";
-    ctx.fillRect(90,370,140,40);
+    ctx.fillRect(90,410,140,40);
     ctx.strokeStyle="#4a0015";
     ctx.lineWidth=2;
-    ctx.strokeRect(90,370,140,40);
+    ctx.strokeRect(90,410,140,40);
     ctx.fillStyle="black";
     ctx.font="20px monospace";
-    ctx.fillText("Restart",160,398);
+    ctx.fillText("Restart",160,438);
 
     return;
   }
@@ -382,15 +405,9 @@ function reset(){
 
     player={px:160,py:200,dx:0,dy:0};
     sparkles=[];
-    hearts=[];
-    stars=[];
-    for(let i=0;i<WIN_SCORE;i++){
-        hearts.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    }
-
-    for(let i=0;i<3;i++){
-        stars.push({x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*28)});
-    }
+    
+    hearts = generateUniquePositions(WIN_SCORE, 20, 28);
+    stars = generateUniquePositions(3, 20, 28);
 
     ghosts=[
         {px:40,py:40,color:"#cc0000"},
@@ -443,7 +460,7 @@ canvas.addEventListener("click", function(e){
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        if(x>=90 && x<=230 && y>=370 && y<=410){
+        if(x>=90 && x<=230 && y>=410 && y<=450){
             location.reload();
         }
     }
