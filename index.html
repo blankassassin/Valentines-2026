@@ -90,7 +90,7 @@ Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
 
 <div id="startScreen">
   <div>
-    Hiiii baby,<br>
+    Hiii baby,<br>
     let's put your Pac-Man <br>
     skills to the test.<br>
     See you on the other side shawty!<br>
@@ -111,7 +111,7 @@ const livesEl = document.getElementById("lives");
 const startScreen = document.getElementById("startScreen");
 
 const grid = 16;
-const WIN_SCORE = 20; 
+const WIN_SCORE = 2; 
 
 let player, hearts, ghosts, sparkles = [], stars = [];
 let score, lives, loop, state="menu";
@@ -265,10 +265,10 @@ function draw(){
     ctx.fillText("YOU WIN!",160,60);
 
     // ✨ Text above image
-    ctx.font="10px monospace";
-    ctx.fillStyle="pink";
+    ctx.font="15px monospace";
+    ctx.fillStyle="black";
     ctx.fillText("All Hearts Caught!",160,100);
-    ctx.fillText("Now Catch Me Feb 14💖",160,125);
+    ctx.fillText("Now Catch Me Feb 14 ♥",160,125);
 
     // Draw image
     if(winImage.complete){
@@ -285,13 +285,13 @@ function draw(){
 
     // Restart button
     ctx.fillStyle="#FF6F91";
-    ctx.fillRect(90,410,140,40);
+    ctx.fillRect(90,380,140,40);
     ctx.strokeStyle="#4a0015";
     ctx.lineWidth=2;
-    ctx.strokeRect(90,410,140,40);
+    ctx.strokeRect(90,380,140,40);
     ctx.fillStyle="black";
     ctx.font="20px monospace";
-    ctx.fillText("Restart",160,438);
+    ctx.fillText("Restart",160,408);
 
     return;
   }
